@@ -1,7 +1,6 @@
-package com.example.musicplaylist.song.respository;
+package com.example.musicplaylist.song.repository;
 
 import com.example.musicplaylist.song.domain.Song;
-import com.example.musicplaylist.song.repository.SongRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

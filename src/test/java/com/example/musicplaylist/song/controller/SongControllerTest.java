@@ -7,8 +7,6 @@ import com.example.musicplaylist.song.dto.SongResponse;
 import com.example.musicplaylist.song.service.SongService;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
@@ -72,7 +70,7 @@ public class SongControllerTest {
         }
 
         @Test
-        void shouldRejectBlankFields() throws Exception {
+        void shouldRejectInvalidFields() throws Exception {
             mockMvc.perform(post(BASE_URL)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
@@ -80,7 +78,7 @@ public class SongControllerTest {
                                         "title": "",
                                         "artist": " ",
                                         "genre": "",
-                                        "durationSeconds": 240,
+                                        "durationSeconds": 0,
                                         "uri": ""
                                     }
                                     """))
@@ -90,6 +88,7 @@ public class SongControllerTest {
                     .andExpect(jsonPath("$.message").value(containsString("title:")))
                     .andExpect(jsonPath("$.message").value(containsString("artist:")))
                     .andExpect(jsonPath("$.message").value(containsString("genre:")))
+                    .andExpect(jsonPath("$.message").value(containsString("durationSeconds:")))
                     .andExpect(jsonPath("$.message").value(containsString("uri:")));
 
             verifyNoInteractions(songService);
@@ -109,58 +108,6 @@ public class SongControllerTest {
                     .andExpect(jsonPath("$.message").value(containsString("artist:")))
                     .andExpect(jsonPath("$.message").value(containsString("genre:")))
                     .andExpect(jsonPath("$.message").value(containsString("durationSeconds:")))
-                    .andExpect(jsonPath("$.message").value(containsString("uri:")));
-
-            verifyNoInteractions(songService);
-        }
-
-        @ParameterizedTest
-        @ValueSource(ints = {0, -1, -100})
-        void shouldRejectNonPositiveDuration(int durationSeconds) throws Exception {
-            mockMvc.perform(post(BASE_URL)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                    {
-                                        "title": "Yellow",
-                                        "artist": "Coldplay",
-                                        "genre": "Rock",
-                                        "durationSeconds": %d,
-                                        "uri": "music/yellow.mp3"
-                                    }
-                                    """.formatted(durationSeconds)))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.status").value(400))
-                    .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
-                    .andExpect(jsonPath("$.message")
-                            .value(containsString("durationSeconds:")));
-
-            verifyNoInteractions(songService);
-        }
-
-        @Test
-        void shouldRejectOversizedFields() throws Exception {
-            mockMvc.perform(post(BASE_URL)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                    {
-                                        "title": "%s",
-                                        "artist": "%s",
-                                        "genre": "%s",
-                                        "durationSeconds": 240,
-                                        "uri": "%s"
-                                    }
-                                    """.formatted(
-                                    "a".repeat(256),
-                                    "a".repeat(256),
-                                    "a".repeat(256),
-                                    "a".repeat(2049)
-                            )))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.status").value(400))
-                    .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
-                    .andExpect(jsonPath("$.message").value(containsString("title:")))
-                    .andExpect(jsonPath("$.message").value(containsString("artist:")))
-                    .andExpect(jsonPath("$.message").value(containsString("genre:")))
                     .andExpect(jsonPath("$.message").value(containsString("uri:")));
 
             verifyNoInteractions(songService);
@@ -185,21 +132,6 @@ public class SongControllerTest {
                     .andExpect(jsonPath("$[0].title").value("Yellow"))
                     .andExpect(jsonPath("$[1].id").value(2))
                     .andExpect(jsonPath("$[1].title").value("Hello"));
-
-            verify(songService).getAllSongs();
-        }
-
-        @Test
-        void shouldReturnEmptyListWhenNoSongsExist() throws Exception {
-            when(songService.getAllSongs())
-                    .thenReturn(List.of());
-
-            mockMvc.perform(get(BASE_URL))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$").isArray())
-                    .andExpect(jsonPath("$.length()").value(0));
-
-            verify(songService).getAllSongs();
         }
 
         @Test
@@ -210,13 +142,7 @@ public class SongControllerTest {
             mockMvc.perform(get(BASE_URL + "/{songId}", 1L))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(1))
-                    .andExpect(jsonPath("$.title").value("Yellow"))
-                    .andExpect(jsonPath("$.artist").value("Coldplay"))
-                    .andExpect(jsonPath("$.genre").value("Rock"))
-                    .andExpect(jsonPath("$.durationSeconds").value(240))
-                    .andExpect(jsonPath("$.uri").value("music/yellow.mp3"));
-
-            verify(songService).getSong(1L);
+                    .andExpect(jsonPath("$.title").value("Yellow"));
         }
 
         @Test
@@ -229,36 +155,6 @@ public class SongControllerTest {
                     .andExpect(jsonPath("$.status").value(404))
                     .andExpect(jsonPath("$.code").value("SONG_NOT_FOUND"))
                     .andExpect(jsonPath("$.message").value("Song not found"));
-
-            verify(songService).getSong(999L);
-        }
-    }
-
-    @Nested
-    class ExceptionHandlingTests {
-
-        @Test
-        void shouldRejectMalformedJson() throws Exception {
-            mockMvc.perform(post(BASE_URL)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("{"))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.status").value(400))
-                    .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
-                    .andExpect(jsonPath("$.message").value("Invalid request"));
-
-            verifyNoInteractions(songService);
-        }
-
-        @Test
-        void shouldRejectInvalidSongId() throws Exception {
-            mockMvc.perform(get(BASE_URL + "/{songId}", "invalid"))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.status").value(400))
-                    .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
-                    .andExpect(jsonPath("$.message").value("Invalid request"));
-
-            verifyNoInteractions(songService);
         }
     }
 

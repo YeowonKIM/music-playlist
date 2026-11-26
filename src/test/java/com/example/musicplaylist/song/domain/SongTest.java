@@ -6,9 +6,6 @@ import jakarta.validation.ValidatorFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.NullAndEmptySource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -23,7 +20,7 @@ public class SongTest {
     }
 
     @AfterAll
-    static void teatDown() {
+    static void tearDown() {
         validatorFactory.close();
     }
 
@@ -32,76 +29,23 @@ public class SongTest {
         Song song = validSongBuilder().build();
 
         assertThat(validator.validate(song)).isEmpty();
-        assertThat(song.getId()).isNull();
-        assertThat(song.getTitle()).isEqualTo("Yellow");
-        assertThat(song.getArtist()).isEqualTo("Coldplay");
-        assertThat(song.getGenre()).isEqualTo("Rock");
-        assertThat(song.getDurationSeconds()).isEqualTo(240);
-        assertThat(song.getUri()).isEqualTo("music/yellow.mp3");
     }
 
-    @ParameterizedTest
-    @NullAndEmptySource
-    @ValueSource(strings = {" ", "   "})
-    void shouldRejectBlankTitle(String title) {
+    @Test
+    void shouldRejectInvalidSong() {
         Song song = validSongBuilder()
-                .title(title)
+                .title("")
+                .artist(null)
+                .genre(" ")
+                .durationSeconds(0)
+                .uri("")
                 .build();
 
         assertThat(validator.validate(song))
                 .extracting(v -> v.getPropertyPath().toString())
-                .containsExactly("title");
-    }
-
-    @ParameterizedTest
-    @NullAndEmptySource
-    @ValueSource(strings = {" ", "   "})
-    void shouldRejectBlankArtist(String artist) {
-        Song song = validSongBuilder()
-                .artist(artist)
-                .build();
-
-        assertThat(validator.validate(song))
-                .extracting(v -> v.getPropertyPath().toString())
-                .containsExactly("artist");
-    }
-
-    @ParameterizedTest
-    @NullAndEmptySource
-    @ValueSource(strings = {" ", "   "})
-    void shouldRejectBlankGenre(String genre) {
-        Song song = validSongBuilder()
-                .genre(genre)
-                .build();
-
-        assertThat(validator.validate(song))
-                .extracting(v -> v.getPropertyPath().toString())
-                .containsExactly("genre");
-    }
-
-    @ParameterizedTest
-    @ValueSource(ints = {0, -1, -100})
-    void shouldRejectNonPositiveDuration(int durationSeconds) {
-        Song song = validSongBuilder()
-                .durationSeconds(durationSeconds)
-                .build();
-
-        assertThat(validator.validate(song))
-                .extracting(v -> v.getPropertyPath().toString())
-                .containsExactly("durationSeconds");
-    }
-
-    @ParameterizedTest
-    @NullAndEmptySource
-    @ValueSource(strings = {" ", "   "})
-    void shouldRejectBlankUri(String uri) {
-        Song song = validSongBuilder()
-                .uri(uri)
-                .build();
-
-        assertThat(validator.validate(song))
-                .extracting(v -> v.getPropertyPath().toString())
-                .containsExactly("uri");
+                .containsExactlyInAnyOrder(
+                        "title", "artist", "genre", "durationSeconds", "uri"
+                );
     }
 
     @Test

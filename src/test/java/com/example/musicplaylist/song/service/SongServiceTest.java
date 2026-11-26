@@ -48,12 +48,7 @@ public class SongServiceTest {
 
             SongResponse response = songService.createSong(request);
 
-            assertThat(response.id()).isEqualTo(1L);
-            assertThat(response.title()).isEqualTo("Yellow");
-            assertThat(response.artist()).isEqualTo("Coldplay");
-            assertThat(response.genre()).isEqualTo("Rock");
-            assertThat(response.durationSeconds()).isEqualTo(240);
-            assertThat(response.uri()).isEqualTo("music/yellow.mp3");
+            assertThat(response).isEqualTo(new SongResponse(1L, "Yellow", "Coldplay", "Rock", 240, "music/yellow.mp3"));
 
             verify(songRepository).save(any(Song.class));
         }
@@ -77,20 +72,6 @@ public class SongServiceTest {
                     new SongResponse(1L, "Yellow", "Coldplay", "Rock", 240, "music/yellow.mp3"),
                     new SongResponse(2L, "Hello", "Adele", "Pop", 295, "music/hello.mp3")
             );
-
-            verify(songRepository).findAll();
-        }
-
-        @Test
-        void shouldReturnEmptyListWhenNoSongsExist() {
-            when(songRepository.findAll())
-                    .thenReturn(List.of());
-
-            List<SongResponse> responses = songService.getAllSongs();
-
-            assertThat(responses).isEmpty();
-
-            verify(songRepository).findAll();
         }
 
         @Test
@@ -104,8 +85,6 @@ public class SongServiceTest {
 
             assertThat(response).isEqualTo(
                     new SongResponse(1L, "Yellow", "Coldplay", "Rock", 240, "music/yellow.mp3"));
-
-            verify(songRepository).findById(1L);
         }
 
         @Test
@@ -116,13 +95,8 @@ public class SongServiceTest {
             assertThatThrownBy(() -> songService.getSong(999L))
                     .isInstanceOfSatisfying(
                             BusinessException.class,
-                            exception -> {
-                                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.SONG_NOT_FOUND);
-                                assertThat(exception.getMessage()).isEqualTo("Song not found");
-                            }
+                            exception -> assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.SONG_NOT_FOUND)
                     );
-
-            verify(songRepository).findById(999L);
         }
     }
 

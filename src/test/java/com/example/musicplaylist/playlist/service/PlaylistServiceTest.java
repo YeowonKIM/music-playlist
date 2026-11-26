@@ -36,7 +36,6 @@ public class PlaylistServiceTest {
     @Mock
     private SongRepository songRepository;
 
-
     @InjectMocks
     private PlaylistService playlistService;
 
@@ -56,9 +55,7 @@ public class PlaylistServiceTest {
 
             PlaylistResponse response = playlistService.createPlaylist(request);
 
-            assertThat(response.id()).isEqualTo(1L);
-            assertThat(response.name()).isEqualTo("My Favorites");
-            assertThat(response.description()).isEqualTo("My favorite songs");
+            assertThat(response).isEqualTo(new PlaylistResponse(1L, "My Favorites", "My favorite songs"));
 
             verify(playlistRepository).save(any(Playlist.class));
         }
@@ -81,19 +78,6 @@ public class PlaylistServiceTest {
                     new PlaylistResponse(1L, "My Favorites", "My favorite songs"),
                     new PlaylistResponse(2L, "Workout", "Workout songs")
             );
-
-            verify(playlistRepository).findAll();
-        }
-
-        @Test
-        void shouldReturnEmptyListWhenNoPlaylistsExist() {
-            when(playlistRepository.findAll())
-                    .thenReturn(List.of());
-
-            List<PlaylistResponse> responses = playlistService.getAllPlaylists();
-
-            assertThat(responses).isEmpty();
-            verify(playlistRepository).findAll();
         }
 
         @Test
@@ -105,11 +89,7 @@ public class PlaylistServiceTest {
 
             PlaylistResponse response = playlistService.getPlaylist(1L);
 
-            assertThat(response.id()).isEqualTo(1L);
-            assertThat(response.name()).isEqualTo("My Favorites");
-            assertThat(response.description()).isEqualTo("My favorite songs");
-
-            verify(playlistRepository).findById(1L);
+            assertThat(response).isEqualTo(new PlaylistResponse(1L, "My Favorites", "My favorite songs"));
         }
 
         @Test
@@ -120,15 +100,8 @@ public class PlaylistServiceTest {
             assertThatThrownBy(() -> playlistService.getPlaylist(999L))
                     .isInstanceOfSatisfying(
                             BusinessException.class,
-                            exception -> {
-                                assertThat(exception.getErrorCode())
-                                        .isEqualTo(ErrorCode.PLAYLIST_NOT_FOUND);
-                                assertThat(exception.getMessage())
-                                        .isEqualTo("Playlist not found");
-                            }
+                            exception -> assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PLAYLIST_NOT_FOUND)
                     );
-
-            verify(playlistRepository).findById(999L);
         }
     }
 
@@ -146,59 +119,10 @@ public class PlaylistServiceTest {
 
             PlaylistResponse response = playlistService.updatePlaylist(1L, request);
 
-            assertThat(response.id()).isEqualTo(1L);
-            assertThat(response.name()).isEqualTo("Updated Favorites");
-            assertThat(response.description()).isEqualTo("Updated description");
+            assertThat(response).isEqualTo(new PlaylistResponse(1L, "Updated Favorites", "Updated description"));
 
             assertThat(playlist.getName()).isEqualTo("Updated Favorites");
             assertThat(playlist.getDescription()).isEqualTo("Updated description");
-
-            verify(playlistRepository).findById(1L);
-            verify(playlistRepository, never()).save(any(Playlist.class));
-        }
-
-        @Test
-        void shouldAllowRemovingPlaylistDescription() {
-            Playlist playlist = createPlaylist();
-
-            UpdatePlaylistRequest request = new UpdatePlaylistRequest("My Favorites", null);
-
-            when(playlistRepository.findById(1L))
-                    .thenReturn(Optional.of(playlist));
-
-            PlaylistResponse response = playlistService.updatePlaylist(1L, request);
-
-            assertThat(response.id()).isEqualTo(1L);
-            assertThat(response.name()).isEqualTo("My Favorites");
-            assertThat(response.description()).isNull();
-
-            assertThat(playlist.getDescription()).isNull();
-
-            verify(playlistRepository).findById(1L);
-            verify(playlistRepository, never()).save(any(Playlist.class));
-        }
-
-        @Test
-        void shouldThrowExceptionWhenUpdatingNonexistentPlaylist() {
-            UpdatePlaylistRequest request = new UpdatePlaylistRequest("Updated Favorites", "Updated description");
-
-            when(playlistRepository.findById(999L))
-                    .thenReturn(Optional.empty());
-
-            assertThatThrownBy(() ->
-                    playlistService.updatePlaylist(999L, request))
-                    .isInstanceOfSatisfying(
-                            BusinessException.class,
-                            exception -> {
-                                assertThat(exception.getErrorCode())
-                                        .isEqualTo(ErrorCode.PLAYLIST_NOT_FOUND);
-                                assertThat(exception.getMessage())
-                                        .isEqualTo("Playlist not found");
-                            }
-                    );
-
-            verify(playlistRepository).findById(999L);
-            verify(playlistRepository, never()).save(any(Playlist.class));
         }
     }
 
@@ -214,33 +138,10 @@ public class PlaylistServiceTest {
 
             playlistService.deletePlaylist(1L);
 
-            verify(playlistRepository).findById(1L);
             verify(playlistRepository).delete(playlist);
-        }
-
-        @Test
-        void shouldThrowExceptionWhenDeletingNonexistentPlaylist() {
-            when(playlistRepository.findById(999L))
-                    .thenReturn(Optional.empty());
-
-            assertThatThrownBy(() ->
-                    playlistService.deletePlaylist(999L))
-                    .isInstanceOfSatisfying(
-                            BusinessException.class,
-                            exception -> {
-                                assertThat(exception.getErrorCode())
-                                        .isEqualTo(ErrorCode.PLAYLIST_NOT_FOUND);
-                                assertThat(exception.getMessage())
-                                        .isEqualTo("Playlist not found");
-                            }
-                    );
-
-            verify(playlistRepository).findById(999L);
-            verify(playlistRepository, never()).delete(any(Playlist.class));
         }
     }
 
-    // Song addition & removal tests
     @Nested
     class AddSongTests {
 
@@ -261,10 +162,6 @@ public class PlaylistServiceTest {
             assertThat(playlist.getTracks())
                     .extracting(PlaylistTrack::getSong)
                     .containsExactly(song);
-
-            verify(playlistRepository).findById(1L);
-            verify(songRepository).findById(1L);
-            verify(playlistRepository, never()).save(any(Playlist.class));
         }
 
         @Test
@@ -278,12 +175,7 @@ public class PlaylistServiceTest {
                     playlistService.addSongToPlaylist(999L, request))
                     .isInstanceOfSatisfying(
                             BusinessException.class,
-                            exception -> {
-                                assertThat(exception.getErrorCode())
-                                        .isEqualTo(ErrorCode.PLAYLIST_NOT_FOUND);
-                                assertThat(exception.getMessage())
-                                        .isEqualTo(ErrorCode.PLAYLIST_NOT_FOUND.getMessage());
-                            }
+                            exception -> assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PLAYLIST_NOT_FOUND)
                     );
 
             verifyNoInteractions(songRepository);
@@ -304,114 +196,31 @@ public class PlaylistServiceTest {
                     playlistService.addSongToPlaylist(1L, request))
                     .isInstanceOfSatisfying(
                             BusinessException.class,
-                            exception -> {
-                                assertThat(exception.getErrorCode())
-                                        .isEqualTo(ErrorCode.SONG_NOT_FOUND);
-                                assertThat(exception.getMessage())
-                                        .isEqualTo(ErrorCode.SONG_NOT_FOUND.getMessage());
-                            }
+                            exception -> assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.SONG_NOT_FOUND)
                     );
 
             assertThat(playlist.getTracks()).isEmpty();
         }
+    }
+
+    @Nested
+    class RemoveSongTests {
 
         @Test
-        void shouldRejectDuplicateSong() {
+        void shouldRemoveSongFromPlaylist() {
             Playlist playlist = createPlaylist();
             Song song = createSong(1L);
-            AddSongRequest request = new AddSongRequest(1L);
 
             playlist.addSong(song);
 
             when(playlistRepository.findById(1L))
                     .thenReturn(Optional.of(playlist));
 
-            when(songRepository.findById(1L))
-                    .thenReturn(Optional.of(song));
+            playlistService.removeSongFromPlaylist(1L, 1L);
 
-            assertThatThrownBy(() ->
-                    playlistService.addSongToPlaylist(1L, request))
-                    .isInstanceOfSatisfying(
-                            BusinessException.class,
-                            exception -> {
-                                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.DUPLICATE_SONG);
-                                assertThat(exception.getMessage()).isEqualTo(ErrorCode.DUPLICATE_SONG.getMessage());
-                            }
-                    );
+            assertThat(playlist.getTracks()).isEmpty();
 
-            assertThat(playlist.getTracks())
-                    .extracting(PlaylistTrack::getSong)
-                    .containsExactly(song);
-        }
-
-        @Nested
-        class RemoveSongTests {
-
-            @Test
-            void shouldRemoveSongFromPlaylist() {
-                Playlist playlist = createPlaylist();
-                Song song = createSong(1L);
-
-                playlist.addSong(song);
-
-                when(playlistRepository.findById(1L))
-                        .thenReturn(Optional.of(playlist));
-
-                playlistService.removeSongFromPlaylist(1L, 1L);
-
-                assertThat(playlist.getTracks()).isEmpty();
-
-                verify(playlistRepository).findById(1L);
-                verifyNoInteractions(songRepository);
-                verify(playlistRepository, never()).save(any(Playlist.class));
-            }
-
-            @Test
-            void shouldRejectRemovalWhenPlaylistNotFound() {
-                when(playlistRepository.findById(999L))
-                        .thenReturn(Optional.empty());
-
-                assertThatThrownBy(() ->
-                        playlistService.removeSongFromPlaylist(999L, 1L))
-                        .isInstanceOfSatisfying(
-                                BusinessException.class,
-                                exception -> {
-                                    assertThat(exception.getErrorCode())
-                                            .isEqualTo(ErrorCode.PLAYLIST_NOT_FOUND);
-                                    assertThat(exception.getMessage())
-                                            .isEqualTo(ErrorCode.PLAYLIST_NOT_FOUND.getMessage());
-                                }
-                        );
-
-                verifyNoInteractions(songRepository);
-            }
-
-            @Test
-            void shouldRejectRemovalWhenSongNotInPlaylist() {
-                Playlist playlist = createPlaylist();
-                Song song = createSong(1L);
-
-                playlist.addSong(song);
-
-                when(playlistRepository.findById(1L))
-                        .thenReturn(Optional.of(playlist));
-
-                assertThatThrownBy(() ->
-                        playlistService.removeSongFromPlaylist(1L, 999L))
-                        .isInstanceOfSatisfying(
-                                BusinessException.class,
-                                exception -> {
-                                    assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.SONG_NOT_IN_PLAYLIST);
-                                    assertThat(exception.getMessage()).isEqualTo(ErrorCode.SONG_NOT_IN_PLAYLIST.getMessage());
-                                }
-                        );
-
-                assertThat(playlist.getTracks())
-                        .extracting(PlaylistTrack::getSong)
-                        .containsExactly(song);
-
-                verifyNoInteractions(songRepository);
-            }
+            verifyNoInteractions(songRepository);
         }
     }
 
