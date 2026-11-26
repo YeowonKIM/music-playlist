@@ -1,9 +1,6 @@
 package com.example.musicplaylist.playlist.controller;
 
-import com.example.musicplaylist.playlist.dto.AddSongRequest;
-import com.example.musicplaylist.playlist.dto.CreatePlaylistRequest;
-import com.example.musicplaylist.playlist.dto.PlaylistResponse;
-import com.example.musicplaylist.playlist.dto.UpdatePlaylistRequest;
+import com.example.musicplaylist.playlist.dto.*;
 import com.example.musicplaylist.playlist.service.PlaylistService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -33,9 +30,25 @@ public class PlaylistController {
         return ResponseEntity.ok(playlistService.getAllPlaylists());
     }
 
+    @GetMapping("/details")
+    public ResponseEntity<List<PlaylistDetailResponse>> getAllPlaylistDetails() {
+        return ResponseEntity.ok(
+                playlistService.getAllPlaylistDetails()
+        );
+    }
+
     @GetMapping("/{playlistId}")
     public ResponseEntity<PlaylistResponse> getPlaylist(@PathVariable Long playlistId) {
         return ResponseEntity.ok(playlistService.getPlaylist(playlistId));
+    }
+
+    @GetMapping("/{playlistId}/details")
+    public ResponseEntity<PlaylistDetailResponse> getPlaylistDetails(
+            @PathVariable Long playlistId
+    ) {
+        return ResponseEntity.ok(
+                playlistService.getPlaylistDetails(playlistId)
+        );
     }
 
     @PutMapping("/{playlistId}")

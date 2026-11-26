@@ -3,10 +3,7 @@ package com.example.musicplaylist.playlist.service;
 import com.example.musicplaylist.common.exception.BusinessException;
 import com.example.musicplaylist.common.exception.ErrorCode;
 import com.example.musicplaylist.playlist.domain.Playlist;
-import com.example.musicplaylist.playlist.dto.AddSongRequest;
-import com.example.musicplaylist.playlist.dto.CreatePlaylistRequest;
-import com.example.musicplaylist.playlist.dto.PlaylistResponse;
-import com.example.musicplaylist.playlist.dto.UpdatePlaylistRequest;
+import com.example.musicplaylist.playlist.dto.*;
 import com.example.musicplaylist.playlist.repository.PlaylistRepository;
 import com.example.musicplaylist.song.domain.Song;
 import com.example.musicplaylist.song.repository.SongRepository;
@@ -42,6 +39,19 @@ public class PlaylistService {
         Playlist playlist = findPlaylistById(playlistId);
 
         return PlaylistResponse.from(playlist);
+    }
+
+    public List<PlaylistDetailResponse> getAllPlaylistDetails() {
+        return playlistRepository.findAllWithTracks().stream()
+                .map(PlaylistDetailResponse::from)
+                .toList();
+    }
+    public PlaylistDetailResponse getPlaylistDetails(Long playlistId) {
+        Playlist playlist = playlistRepository.findByIdWithTracks(playlistId)
+                .orElseThrow(() ->
+                        new BusinessException(ErrorCode.PLAYLIST_NOT_FOUND));
+
+        return PlaylistDetailResponse.from(playlist);
     }
 
     @Transactional
