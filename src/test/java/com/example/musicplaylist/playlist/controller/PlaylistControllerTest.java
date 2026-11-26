@@ -2,10 +2,7 @@ package com.example.musicplaylist.playlist.controller;
 
 import com.example.musicplaylist.common.exception.BusinessException;
 import com.example.musicplaylist.common.exception.ErrorCode;
-import com.example.musicplaylist.playlist.dto.AddSongRequest;
-import com.example.musicplaylist.playlist.dto.CreatePlaylistRequest;
-import com.example.musicplaylist.playlist.dto.PlaylistResponse;
-import com.example.musicplaylist.playlist.dto.UpdatePlaylistRequest;
+import com.example.musicplaylist.playlist.dto.*;
 import com.example.musicplaylist.playlist.service.PlaylistService;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -330,8 +327,9 @@ public class PlaylistControllerTest {
         @Test
         void shouldDeletePlaylist() throws Exception {
             mockMvc.perform(delete(BASE_URL + "/{playlistId}", 1L))
-                    .andExpect(status().isNoContent())
-                    .andExpect(content().string(""));
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.message")
+                            .value("Playlist deleted successfully"));
 
             verify(playlistService).deletePlaylist(1L);
         }
@@ -427,15 +425,14 @@ public class PlaylistControllerTest {
             mockMvc.perform(post(BASE_URL + "/1/tracks")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
-                                {
-                                    "songId": 2
-                                }
-                                """))
+                            {
+                                "songId": 2
+                            }
+                            """))
                     .andExpect(status().isCreated())
-                    .andExpect(content().string(""));
+                    .andExpect(jsonPath("$.message").value("Song added to playlist successfully"));
 
-            verify(playlistService)
-                    .addSongToPlaylist(1L, new AddSongRequest(2L));
+            verify(playlistService).addSongToPlaylist(1L, new AddSongRequest(2L));
         }
 
         @Test
@@ -538,11 +535,10 @@ public class PlaylistControllerTest {
         @Test
         void shouldRemoveSongFromPlaylist() throws Exception {
             mockMvc.perform(delete(BASE_URL + "/1/tracks/2"))
-                    .andExpect(status().isNoContent())
-                    .andExpect(content().string(""));
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.message").value("Song removed from playlist successfully"));
 
-            verify(playlistService)
-                    .removeSongFromPlaylist(1L, 2L);
+            verify(playlistService).removeSongFromPlaylist(1L, 2L);
         }
 
         @Test
@@ -555,8 +551,7 @@ public class PlaylistControllerTest {
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.status").value(404))
                     .andExpect(jsonPath("$.code").value("PLAYLIST_NOT_FOUND"))
-                    .andExpect(jsonPath("$.message")
-                            .value(ErrorCode.PLAYLIST_NOT_FOUND.getMessage()));
+                    .andExpect(jsonPath("$.message").value(ErrorCode.PLAYLIST_NOT_FOUND.getMessage()));
         }
 
         @Test
@@ -571,6 +566,67 @@ public class PlaylistControllerTest {
                     .andExpect(jsonPath("$.code").value("SONG_NOT_IN_PLAYLIST"))
                     .andExpect(jsonPath("$.message")
                             .value(ErrorCode.SONG_NOT_IN_PLAYLIST.getMessage()));
+        }
+    }
+
+    @Nested
+    class MoveSongTests {
+
+        @Test
+        void shouldMoveSongInPlaylist() throws Exception {
+            mockMvc.perform(patch(BASE_URL + "/1/tracks/2/position")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                {
+                                    "newPosition": 0
+                                }
+                                """))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.message")
+                            .value("Song position updated successfully"));
+
+            verify(playlistService).moveSongInPlaylist(
+                    1L,
+                    2L,
+                    new MoveSongRequest(0)
+            );
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {
+                "{}",
+                "{\"newPosition\": null}",
+                "{\"newPosition\": -1}"
+        })
+        void shouldRejectInvalidMoveSongRequest(String requestBody)
+                throws Exception {
+            mockMvc.perform(patch(BASE_URL + "/1/tracks/2/position")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestBody))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code")
+                            .value("VALIDATION_FAILED"));
+
+            verifyNoInteractions(playlistService);
+        }
+
+        @Test
+        void shouldReturnBadRequestWhenPositionIsOutOfBounds()
+                throws Exception {
+            doThrow(new BusinessException(ErrorCode.INVALID_POSITION))
+                    .when(playlistService)
+                    .moveSongInPlaylist(1L, 2L, new MoveSongRequest(10));
+
+            mockMvc.perform(patch(BASE_URL + "/1/tracks/2/position")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                {
+                                    "newPosition": 10
+                                }
+                                """))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code")
+                            .value("INVALID_POSITION"));
         }
     }
 

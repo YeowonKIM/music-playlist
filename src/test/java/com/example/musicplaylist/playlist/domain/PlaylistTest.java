@@ -6,14 +6,13 @@ import com.example.musicplaylist.song.domain.Song;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.test.util.ReflectionTestUtils;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -422,6 +421,107 @@ public class PlaylistTest {
             assertThat(playlist.getTracks())
                     .extracting(PlaylistTrack::getPosition)
                     .containsExactly(0, 1, 2);
+        }
+    }
+
+    @Nested
+    class MoveSongTests {
+
+        private Playlist playlist;
+
+        @BeforeEach
+        void setUp() {
+            playlist = Playlist.of("My Playlist", "Description");
+
+            playlist.addSong(createSong(1L));
+            playlist.addSong(createSong(2L));
+            playlist.addSong(createSong(3L));
+            playlist.addSong(createSong(4L));
+            playlist.addSong(createSong(5L));
+        }
+
+        @Test
+        void shouldMoveSongForward() {
+            playlist.moveSong(2L, 3);
+
+            assertTrackOrder(1L, 3L, 4L, 2L, 5L);
+        }
+
+        @Test
+        void shouldMoveSongBackward() {
+            playlist.moveSong(4L, 1);
+
+            assertTrackOrder(1L, 4L, 2L, 3L, 5L);
+        }
+
+        @Test
+        void shouldMoveSongToFirstPosition() {
+            playlist.moveSong(5L, 0);
+
+            assertTrackOrder(5L, 1L, 2L, 3L, 4L);
+        }
+
+        @Test
+        void shouldMoveSongToLastPosition() {
+            playlist.moveSong(1L, 4);
+
+            assertTrackOrder(2L, 3L, 4L, 5L, 1L);
+        }
+
+        @Test
+        void shouldKeepOrderWhenPositionIsUnchanged() {
+            playlist.moveSong(3L, 2);
+
+            assertTrackOrder(1L, 2L, 3L, 4L, 5L);
+        }
+
+        @ParameterizedTest
+        @ValueSource(ints = {-1, 5})
+        void shouldRejectInvalidPosition(int newPosition) {
+            assertThatThrownBy(() -> playlist.moveSong(2L, newPosition))
+                    .isInstanceOfSatisfying(
+                            BusinessException.class,
+                            exception -> assertThat(exception.getErrorCode())
+                                    .isEqualTo(ErrorCode.INVALID_POSITION)
+                    );
+
+            assertTrackOrder(1L, 2L, 3L, 4L, 5L);
+        }
+
+        @Test
+        void shouldRejectSongNotInPlaylist() {
+            assertThatThrownBy(() -> playlist.moveSong(999L, 0))
+                    .isInstanceOfSatisfying(
+                            BusinessException.class,
+                            exception -> assertThat(exception.getErrorCode())
+                                    .isEqualTo(ErrorCode.SONG_NOT_IN_PLAYLIST)
+                    );
+
+            assertTrackOrder(1L, 2L, 3L, 4L, 5L);
+        }
+
+        @Test
+        void shouldRejectNullSongId() {
+            assertThatThrownBy(() -> playlist.moveSong(null, 0))
+                    .isInstanceOfSatisfying(
+                            BusinessException.class,
+                            exception -> assertThat(exception.getErrorCode())
+                                    .isEqualTo(ErrorCode.INVALID_REQUEST)
+                    );
+
+            assertTrackOrder(1L, 2L, 3L, 4L, 5L);
+        }
+
+        private void assertTrackOrder(Long... expectedSongIds) {
+            List<PlaylistTrack> tracks = playlist.getTracks();
+
+            assertThat(tracks)
+                    .extracting(track -> track.getSong().getId())
+                    .containsExactly(expectedSongIds);
+
+            assertThat(tracks)
+                    .extracting(PlaylistTrack::getPosition)
+                    .containsExactly(0, 1, 2, 3, 4);
         }
     }
 

@@ -1,5 +1,6 @@
 package com.example.musicplaylist.playlist.controller;
 
+import com.example.musicplaylist.common.dto.MessageResponse;
 import com.example.musicplaylist.playlist.dto.*;
 import com.example.musicplaylist.playlist.service.PlaylistService;
 import jakarta.validation.Valid;
@@ -57,24 +58,29 @@ public class PlaylistController {
     }
 
     @DeleteMapping("/{playlistId}")
-    public ResponseEntity<Void> deletePlaylist(@PathVariable Long playlistId) {
+    public ResponseEntity<MessageResponse> deletePlaylist(@PathVariable Long playlistId) {
         playlistService.deletePlaylist(playlistId);
 
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(new MessageResponse("Playlist deleted successfully"));
     }
 
-    // Dynamic song addition & removal
     @PostMapping("/{playlistId}/tracks")
-    public ResponseEntity<Void> addSongToPlaylist(@PathVariable Long playlistId, @Valid @RequestBody AddSongRequest request) {
+    public ResponseEntity<MessageResponse> addSongToPlaylist(@PathVariable Long playlistId, @Valid @RequestBody AddSongRequest request) {
         playlistService.addSongToPlaylist(playlistId, request);
 
-        return ResponseEntity.status(HttpStatus.CREATED).build();
-    }
+        return ResponseEntity.status(HttpStatus.CREATED).body(new MessageResponse("Song added to playlist successfully"));}
 
     @DeleteMapping("/{playlistId}/tracks/{songId}")
-    public ResponseEntity<Void> removeSongFromPlaylist(@PathVariable Long playlistId, @PathVariable Long songId) {
+    public ResponseEntity<MessageResponse> removeSongFromPlaylist(@PathVariable Long playlistId, @PathVariable Long songId) {
         playlistService.removeSongFromPlaylist(playlistId, songId);
 
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(new MessageResponse("Song removed from playlist successfully"));
+    }
+
+    @PatchMapping("/{playlistId}/tracks/{songId}/position")
+    public ResponseEntity<MessageResponse> moveSongInPlaylist(@PathVariable Long playlistId, @PathVariable Long songId, @Valid @RequestBody MoveSongRequest request) {
+        playlistService.moveSongInPlaylist(playlistId, songId, request);
+
+        return ResponseEntity.ok(new MessageResponse("Song position updated successfully"));
     }
 }

@@ -86,6 +86,13 @@ public class PlaylistService {
         playlist.removeSong(songId);
     }
 
+    @Transactional
+    public void moveSongInPlaylist(Long playlistId, Long songId, MoveSongRequest request) {
+        Playlist playlist = findPlaylistById(playlistId);
+
+        playlist.moveSong(songId, request.newPosition());
+    }
+
     private Playlist findPlaylistById(Long playlistId) {
         return playlistRepository.findById(playlistId)
                 .orElseThrow(() ->

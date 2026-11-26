@@ -13,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.hibernate.exception.ConstraintViolationException;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -180,6 +182,61 @@ public class PlaylistRepositoryTest {
                 .isNull();
 
         assertThat(songRepository.findById(songId)).isPresent();
+    }
+
+    @Test
+    void shouldPersistReorderedTracksWithoutReplacingExistingTracks() {
+        Song firstSong = songRepository.save(createSong());
+        Song secondSong = songRepository.save(createSong());
+        Song thirdSong = songRepository.save(createSong());
+
+        Playlist playlist = Playlist.of("My Playlist", "Description");
+        playlist.addSong(firstSong);
+        playlist.addSong(secondSong);
+        playlist.addSong(thirdSong);
+
+        playlistRepository.saveAndFlush(playlist);
+
+        Long playlistId = playlist.getId();
+
+        List<Long> originalTrackIds = playlist.getTracks().stream()
+                .map(PlaylistTrack::getId)
+                .toList();
+
+        entityManager.clear();
+
+        Playlist managedPlaylist = playlistRepository.findById(playlistId)
+                .orElseThrow();
+
+        managedPlaylist.moveSong(firstSong.getId(), 2);
+
+        entityManager.flush();
+        entityManager.clear();
+
+        Playlist reloadedPlaylist = playlistRepository.findById(playlistId)
+                .orElseThrow();
+
+        List<PlaylistTrack> tracks = reloadedPlaylist.getTracks();
+
+        assertThat(tracks)
+                .extracting(track -> track.getSong().getId())
+                .containsExactly(
+                        secondSong.getId(),
+                        thirdSong.getId(),
+                        firstSong.getId()
+                );
+
+        assertThat(tracks)
+                .extracting(PlaylistTrack::getPosition)
+                .containsExactly(0, 1, 2);
+
+        assertThat(tracks)
+                .extracting(PlaylistTrack::getId)
+                .containsExactly(
+                        originalTrackIds.get(1),
+                        originalTrackIds.get(2),
+                        originalTrackIds.get(0)
+                );
     }
 
     private Song createSong() {
