@@ -11,11 +11,12 @@ import java.util.Optional;
 public interface PlaylistRepository extends JpaRepository<Playlist, Long> {
 
     @Query("""
-            SELECT DISTINCT p
-            FROM Playlist p
-            LEFT JOIN FETCH p.tracks t
-            LEFT JOIN FETCH t.song
-            """)
+        SELECT DISTINCT p
+        FROM Playlist p
+        LEFT JOIN FETCH p.tracks t
+        LEFT JOIN FETCH t.song
+        ORDER BY p.id ASC
+        """)
     List<Playlist> findAllWithTracks();
 
     @Query("""
