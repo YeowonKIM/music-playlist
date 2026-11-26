@@ -10,7 +10,8 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "playlist_tracks")
+@Table(name = "playlist_tracks",
+        uniqueConstraints = {@UniqueConstraint(name = "uk_playlist_tracks_playlist_song", columnNames = {"playlist_id", "song_id"})})
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PlaylistTrack {
 

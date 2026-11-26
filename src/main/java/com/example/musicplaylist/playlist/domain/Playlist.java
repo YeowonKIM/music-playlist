@@ -1,5 +1,6 @@
 package com.example.musicplaylist.playlist.domain;
 
+import com.example.musicplaylist.song.domain.Song;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -9,6 +10,7 @@ import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Getter
 @Entity
@@ -40,5 +42,21 @@ public class Playlist {
 
     public List<PlaylistTrack> getTracks() {
         return List.copyOf(tracks);
+    }
+
+    // TODO: Refactor exception handling
+    public void addSong(Song song) {
+        if (song == null) {
+            throw new IllegalArgumentException("Song must not be null");
+        }
+
+        boolean alreadyExists = tracks.stream()
+                .anyMatch(track -> track.getSong() == song || (song.getId() != null && song.getId().equals(track.getSong().getId())));
+
+        if (alreadyExists) {
+            throw new IllegalArgumentException("Song already exists in the playlist");
+        }
+
+        tracks.add(new PlaylistTrack(this, song, tracks.size()));
     }
 }
