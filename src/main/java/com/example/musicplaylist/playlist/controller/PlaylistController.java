@@ -1,8 +1,7 @@
 package com.example.musicplaylist.playlist.controller;
 
-import com.example.musicplaylist.playlist.dto.CreatePlaylistRequest;
-import com.example.musicplaylist.playlist.dto.PlaylistResponse;
-import com.example.musicplaylist.playlist.dto.UpdatePlaylistRequest;
+import com.example.musicplaylist.common.dto.MessageResponse;
+import com.example.musicplaylist.playlist.dto.*;
 import com.example.musicplaylist.playlist.service.PlaylistService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,9 +31,25 @@ public class PlaylistController {
         return ResponseEntity.ok(playlistService.getAllPlaylists());
     }
 
+    @GetMapping("/details")
+    public ResponseEntity<List<PlaylistDetailResponse>> getAllPlaylistDetails() {
+        return ResponseEntity.ok(
+                playlistService.getAllPlaylistDetails()
+        );
+    }
+
     @GetMapping("/{playlistId}")
     public ResponseEntity<PlaylistResponse> getPlaylist(@PathVariable Long playlistId) {
         return ResponseEntity.ok(playlistService.getPlaylist(playlistId));
+    }
+
+    @GetMapping("/{playlistId}/details")
+    public ResponseEntity<PlaylistDetailResponse> getPlaylistDetails(
+            @PathVariable Long playlistId
+    ) {
+        return ResponseEntity.ok(
+                playlistService.getPlaylistDetails(playlistId)
+        );
     }
 
     @PutMapping("/{playlistId}")
@@ -43,9 +58,29 @@ public class PlaylistController {
     }
 
     @DeleteMapping("/{playlistId}")
-    public ResponseEntity<Void> deletePlaylist(@PathVariable Long playlistId) {
+    public ResponseEntity<MessageResponse> deletePlaylist(@PathVariable Long playlistId) {
         playlistService.deletePlaylist(playlistId);
 
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(new MessageResponse("Playlist deleted successfully"));
+    }
+
+    @PostMapping("/{playlistId}/tracks")
+    public ResponseEntity<MessageResponse> addSongToPlaylist(@PathVariable Long playlistId, @Valid @RequestBody AddSongRequest request) {
+        playlistService.addSongToPlaylist(playlistId, request);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(new MessageResponse("Song added to playlist successfully"));}
+
+    @DeleteMapping("/{playlistId}/tracks/{songId}")
+    public ResponseEntity<MessageResponse> removeSongFromPlaylist(@PathVariable Long playlistId, @PathVariable Long songId) {
+        playlistService.removeSongFromPlaylist(playlistId, songId);
+
+        return ResponseEntity.ok(new MessageResponse("Song removed from playlist successfully"));
+    }
+
+    @PatchMapping("/{playlistId}/tracks/{songId}/position")
+    public ResponseEntity<MessageResponse> moveSongInPlaylist(@PathVariable Long playlistId, @PathVariable Long songId, @Valid @RequestBody MoveSongRequest request) {
+        playlistService.moveSongInPlaylist(playlistId, songId, request);
+
+        return ResponseEntity.ok(new MessageResponse("Song position updated successfully"));
     }
 }

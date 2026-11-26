@@ -1,5 +1,7 @@
 package com.example.musicplaylist.playlist.domain;
 
+import com.example.musicplaylist.common.exception.BusinessException;
+import com.example.musicplaylist.common.exception.ErrorCode;
 import com.example.musicplaylist.song.domain.Song;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -41,5 +43,13 @@ public class PlaylistTrack {
 
     static PlaylistTrack of(Playlist playlist, Song song, int position) {
         return new PlaylistTrack(playlist, song, position);
+    }
+
+    void updatePosition(int position) {
+        if (position < 0) {
+            throw new BusinessException(ErrorCode.INVALID_POSITION);
+        }
+
+        this.position = position;
     }
 }

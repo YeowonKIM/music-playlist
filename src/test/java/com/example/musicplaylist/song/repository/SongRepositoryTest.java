@@ -1,7 +1,6 @@
-package com.example.musicplaylist.song.respository;
+package com.example.musicplaylist.song.repository;
 
 import com.example.musicplaylist.song.domain.Song;
-import com.example.musicplaylist.song.repository.SongRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,13 +18,13 @@ public class SongRepositoryTest {
 
     @Test
     void shouldPersistAndRetrieveSong() {
-        Song song = new Song(
-                "Yellow",
-                "Coldplay",
-                "Rock",
-                240,
-                "music/yellow.mp3"
-        );
+        Song song = Song.builder()
+                .title("Yellow")
+                .artist("Coldplay")
+                .genre("Rock")
+                .durationSeconds(240)
+                .uri("music/yellow.mp3")
+                .build();
 
         Song savedSong = songRepository.saveAndFlush(song);
 

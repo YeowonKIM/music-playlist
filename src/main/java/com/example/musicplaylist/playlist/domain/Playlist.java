@@ -11,6 +11,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Getter
@@ -64,6 +65,66 @@ public class Playlist {
         }
 
         tracks.add(PlaylistTrack.of(this, song, tracks.size()));
+    }
+
+    public void moveSong(Long songId, int newPosition) {
+        if (songId == null) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST);
+        }
+
+        if (newPosition < 0 || newPosition >= tracks.size()) {
+            throw new BusinessException(ErrorCode.INVALID_POSITION);
+        }
+
+        int currentPosition = findTrackIndex(songId);
+
+        if (currentPosition == newPosition) {
+            return;
+        }
+
+        int start = Math.min(currentPosition, newPosition);
+        int end = Math.max(currentPosition, newPosition);
+        int distance = currentPosition < newPosition ? -1 : 1;
+
+        Collections.rotate(tracks.subList(start, end + 1), distance);
+
+        updateTrackPositions(start, end);
+    }
+
+    public void removeSong(Long songId) {
+        if (songId == null) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST);
+        }
+
+        boolean removed = tracks.removeIf(
+                track -> songId.equals(track.getSong().getId())
+        );
+
+        if (!removed) {
+            throw new BusinessException(ErrorCode.SONG_NOT_IN_PLAYLIST);
+        }
+
+        updateTrackPositions();
+    }
+
+    private int findTrackIndex(Long songId) {
+        for (int i = 0; i < tracks.size(); i++) {
+            if (songId.equals(tracks.get(i).getSong().getId())) {
+                return i;
+            }
+        }
+
+        throw new BusinessException(ErrorCode.SONG_NOT_IN_PLAYLIST);
+    }
+
+    private void updateTrackPositions() {
+        updateTrackPositions(0, tracks.size() - 1);
+    }
+
+    private void updateTrackPositions(int start, int end) {
+        for (int i = start; i <= end; i++) {
+            tracks.get(i).updatePosition(i);
+        }
     }
 
     public void rename(String name) {

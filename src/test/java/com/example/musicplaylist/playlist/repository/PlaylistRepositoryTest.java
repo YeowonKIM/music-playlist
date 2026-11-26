@@ -13,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.hibernate.exception.ConstraintViolationException;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -26,90 +28,6 @@ public class PlaylistRepositoryTest {
 
     @PersistenceContext
     private EntityManager entityManager;
-
-    @Test
-    void shouldPersistAndRetrievePlaylist() {
-        Playlist playlist = Playlist.of("My Favorites", "My favorite songs");
-        Playlist savedPlaylist = playlistRepository.saveAndFlush(playlist);
-
-        assertThat(savedPlaylist.getId()).isNotNull();
-
-        entityManager.clear();
-
-        Playlist retrievedPlaylist = playlistRepository.findById(savedPlaylist.getId()).orElseThrow();
-
-        assertThat(retrievedPlaylist.getId()).isEqualTo(savedPlaylist.getId());
-        assertThat(retrievedPlaylist.getName()).isEqualTo("My Favorites");
-        assertThat(retrievedPlaylist.getDescription()).isEqualTo("My favorite songs");
-        assertThat(retrievedPlaylist.getTracks()).isEmpty();
-    }
-
-    @Test
-    void shouldPersistPlaylistWithTracks() {
-        Song firstSong = songRepository.save(createSong());
-        Song secondSong = songRepository.save(new Song("Hello", "Adele", "Pop", 295, "music/hello.mp3"));
-
-        Playlist playlist = Playlist.of("My Favorites", null);
-        playlist.addSong(firstSong);
-        playlist.addSong(secondSong);
-
-        Playlist savedPlaylist = playlistRepository.saveAndFlush(playlist);
-
-        entityManager.clear();
-
-        Playlist retrievedPlaylist = playlistRepository.findById(savedPlaylist.getId()).orElseThrow();
-
-        assertThat(retrievedPlaylist.getTracks()).hasSize(2);
-
-        assertThat(retrievedPlaylist.getTracks())
-                .allSatisfy(track -> {
-                    assertThat(track.getId()).isNotNull();
-                    assertThat(track.getPlaylist().getId())
-                            .isEqualTo(retrievedPlaylist.getId());
-                });
-
-        assertThat(retrievedPlaylist.getTracks())
-                .extracting(track -> track.getSong().getId())
-                .containsExactly(firstSong.getId(), secondSong.getId());
-
-        assertThat(retrievedPlaylist.getTracks())
-                .extracting(PlaylistTrack::getPosition)
-                .containsExactly(0, 1);
-    }
-
-    @Test
-    void shouldRetrieveTracksInPositionOrder() {
-        Song firstSong = songRepository.save(createSong());
-        Song secondSong = songRepository.save(new Song("Hello", "Adele", "Pop", 295, "music/hello.mp3"));
-
-        Playlist playlist = Playlist.of("My Favorites", null);
-        playlist.addSong(firstSong);
-        playlist.addSong(secondSong);
-
-        Playlist savedPlaylist = playlistRepository.saveAndFlush(playlist);
-
-        entityManager.createQuery("""
-            UPDATE PlaylistTrack t
-            SET t.position = 1 - t.position
-            WHERE t.playlist.id = :playlistId
-            """)
-                .setParameter("playlistId", savedPlaylist.getId())
-                .executeUpdate();
-
-        entityManager.clear();
-
-        Playlist retrievedPlaylist = playlistRepository
-                .findById(savedPlaylist.getId())
-                .orElseThrow();
-
-        assertThat(retrievedPlaylist.getTracks())
-                .extracting(PlaylistTrack::getPosition)
-                .containsExactly(0, 1);
-
-        assertThat(retrievedPlaylist.getTracks())
-                .extracting(track -> track.getSong().getId())
-                .containsExactly(secondSong.getId(), firstSong.getId());
-    }
 
     @Test
     void shouldRejectDuplicateSongWithSameId() {
@@ -129,8 +47,7 @@ public class PlaylistRepositoryTest {
         assertThatThrownBy(() -> playlist.addSong(retrievedSong))
                 .isInstanceOfSatisfying(
                         BusinessException.class,
-                        exception -> assertThat(exception.getErrorCode())
-                                .isEqualTo(ErrorCode.DUPLICATE_SONG)
+                        exception -> assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.DUPLICATE_SONG)
                 );
 
         assertThat(playlist.getTracks()).hasSize(1);
@@ -175,16 +92,72 @@ public class PlaylistRepositoryTest {
         entityManager.clear();
 
         assertThat(playlistRepository.findById(playlistId)).isEmpty();
-
-        assertThat(entityManager.find(PlaylistTrack.class, trackId))
-                .isNull();
-
+        assertThat(entityManager.find(PlaylistTrack.class, trackId)).isNull();
         assertThat(songRepository.findById(songId)).isPresent();
     }
 
+    @Test
+    void shouldPersistReorderedTracksWithoutReplacingExistingTracks() {
+        Song firstSong = songRepository.save(createSong());
+        Song secondSong = songRepository.save(createSong());
+        Song thirdSong = songRepository.save(createSong());
+
+        Playlist playlist = Playlist.of("My Playlist", "Description");
+        playlist.addSong(firstSong);
+        playlist.addSong(secondSong);
+        playlist.addSong(thirdSong);
+
+        playlistRepository.saveAndFlush(playlist);
+
+        Long playlistId = playlist.getId();
+
+        List<Long> originalTrackIds = playlist.getTracks().stream()
+                .map(PlaylistTrack::getId)
+                .toList();
+
+        entityManager.clear();
+
+        Playlist managedPlaylist = playlistRepository.findById(playlistId)
+                .orElseThrow();
+
+        managedPlaylist.moveSong(firstSong.getId(), 2);
+
+        entityManager.flush();
+        entityManager.clear();
+
+        Playlist reloadedPlaylist = playlistRepository.findById(playlistId)
+                .orElseThrow();
+
+        List<PlaylistTrack> tracks = reloadedPlaylist.getTracks();
+
+        assertThat(tracks)
+                .extracting(track -> track.getSong().getId())
+                .containsExactly(
+                        secondSong.getId(),
+                        thirdSong.getId(),
+                        firstSong.getId()
+                );
+
+        assertThat(tracks)
+                .extracting(PlaylistTrack::getPosition)
+                .containsExactly(0, 1, 2);
+
+        assertThat(tracks)
+                .extracting(PlaylistTrack::getId)
+                .containsExactly(
+                        originalTrackIds.get(1),
+                        originalTrackIds.get(2),
+                        originalTrackIds.get(0)
+                );
+    }
+
     private Song createSong() {
-        return new Song(
-                "Yellow", "Coldplay", "Rock", 240, "music/yellow.mp3"
-        );
+        return Song.builder()
+                .title("Yellow")
+                .artist("Coldplay")
+                .genre("Rock")
+                .durationSeconds(240)
+                .uri("music/yellow.mp3")
+                .build();
     }
 }

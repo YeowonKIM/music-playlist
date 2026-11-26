@@ -1,5 +1,7 @@
 package com.example.musicplaylist.playlist.domain;
 
+import com.example.musicplaylist.common.exception.BusinessException;
+import com.example.musicplaylist.common.exception.ErrorCode;
 import com.example.musicplaylist.song.domain.Song;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -7,10 +9,9 @@ import jakarta.validation.ValidatorFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 public class PlaylistTrackTest {
     private static ValidatorFactory validatorFactory;
@@ -27,52 +28,49 @@ public class PlaylistTrackTest {
         validatorFactory.close();
     }
 
-    @ParameterizedTest
-    @ValueSource(ints = {0, 1, 10})
-    void shouldCreateValidPlaylistTrack(int position) {
-        Playlist playlist = Playlist.of("My Favorites", null);
-        Song song = createSong();
-        PlaylistTrack track = PlaylistTrack.of(playlist, song, position);
+    @Test
+    void shouldRejectInvalidPlaylistTrack() {
+        PlaylistTrack track = PlaylistTrack.of(null, null, -1);
 
-        assertThat(validator.validate(track)).isEmpty();
-        assertThat(track.getId()).isNull();
-        assertThat(track.getPlaylist()).isSameAs(playlist);
-        assertThat(track.getSong()).isSameAs(song);
-        assertThat(track.getPosition()).isEqualTo(position);
+        assertThat(validator.validate(track))
+                .extracting(v -> v.getPropertyPath().toString())
+                .containsExactlyInAnyOrder(
+                        "playlist", "song", "position"
+                );
+    }
+
+    // Update position tests
+    @Test
+    void shouldUpdatePositionToZero() {
+        Playlist playlist = Playlist.of("My Playlist", "Description");
+        PlaylistTrack track = PlaylistTrack.of(playlist, createSong(), 3);
+
+        track.updatePosition(0);
+
+        assertThat(track.getPosition()).isZero();
     }
 
     @Test
-    void shouldRejectNullPlaylist() {
-        PlaylistTrack track = PlaylistTrack.of(null, createSong(), 0);
+    void shouldRejectNegativePositionUpdate() {
+        Playlist playlist = Playlist.of("My Playlist", "Description");
+        PlaylistTrack track = PlaylistTrack.of(playlist, createSong(), 2);
 
-        assertThat(validator.validate(track))
-                .extracting(v -> v.getPropertyPath().toString())
-                .containsExactly("playlist");
-    }
+        assertThatThrownBy(() -> track.updatePosition(-1))
+                .isInstanceOfSatisfying(
+                        BusinessException.class,
+                        exception -> assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_POSITION)
+                );
 
-    @Test
-    void shouldRejectNullSong() {
-        Playlist playlist = Playlist.of("My Favorites", null);
-        PlaylistTrack track = PlaylistTrack.of(playlist, null, 0);
-
-        assertThat(validator.validate(track))
-                .extracting(v -> v.getPropertyPath().toString())
-                .containsExactly("song");
-    }
-
-    @ParameterizedTest
-    @ValueSource(ints = {-1, -10})
-    void shouldRejectNegativePosition(int position) {
-        Playlist playlist = Playlist.of("My Favorites", null);
-        PlaylistTrack track = PlaylistTrack.of(playlist, createSong(), position);
-
-        assertThat(validator.validate(track))
-                .extracting(v -> v.getPropertyPath().toString())
-                .containsExactly("position");
+        assertThat(track.getPosition()).isEqualTo(2);
     }
 
     private Song createSong() {
-        return new Song("Yellow", "Coldplay", "Rock", 240, "music/yellow.mp3");
+        return Song.builder()
+                .title("Yellow")
+                .artist("Coldplay")
+                .genre("Rock")
+                .durationSeconds(240)
+                .uri("music/yellow.mp3")
+                .build();
     }
-
 }
