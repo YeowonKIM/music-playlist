@@ -144,7 +144,6 @@ public class PlaylistTest {
             assertThat(playlist.getTracks()).hasSize(1);
         }
 
-        // Song removal tests
         @Test
         void shouldAppendSongAfterRemoval() {
             Playlist playlist = createPlaylist();
