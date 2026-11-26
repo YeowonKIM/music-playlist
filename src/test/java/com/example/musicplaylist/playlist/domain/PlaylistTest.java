@@ -1,5 +1,7 @@
 package com.example.musicplaylist.playlist.domain;
 
+import com.example.musicplaylist.common.exception.BusinessException;
+import com.example.musicplaylist.common.exception.ErrorCode;
 import com.example.musicplaylist.song.domain.Song;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -130,8 +132,15 @@ public class PlaylistTest {
         Playlist playlist = new Playlist("My Favorites", null);
 
         assertThatThrownBy(() -> playlist.addSong(null))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Song must not be null");
+                .isInstanceOfSatisfying(
+                        BusinessException.class,
+                        exception -> {
+                            assertThat(exception.getErrorCode())
+                                    .isEqualTo(ErrorCode.INVALID_SONG);
+                            assertThat(exception.getMessage())
+                                    .isEqualTo("Song must not be null");
+                        }
+                );
 
         assertThat(playlist.getTracks()).isEmpty();
     }
@@ -144,8 +153,15 @@ public class PlaylistTest {
         playlist.addSong(song);
 
         assertThatThrownBy(() -> playlist.addSong(song))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Song already exists in the playlist");
+                .isInstanceOfSatisfying(
+                        BusinessException.class,
+                        exception -> {
+                            assertThat(exception.getErrorCode())
+                                    .isEqualTo(ErrorCode.DUPLICATE_SONG);
+                            assertThat(exception.getMessage())
+                                    .isEqualTo("Song already exists in the playlist");
+                        }
+                );
 
         assertThat(playlist.getTracks()).hasSize(1);
     }

@@ -1,5 +1,7 @@
 package com.example.musicplaylist.playlist.repository;
 
+import com.example.musicplaylist.common.exception.BusinessException;
+import com.example.musicplaylist.common.exception.ErrorCode;
 import com.example.musicplaylist.playlist.domain.Playlist;
 import com.example.musicplaylist.playlist.domain.PlaylistTrack;
 import com.example.musicplaylist.song.domain.Song;
@@ -125,8 +127,11 @@ public class PlaylistRepositoryTest {
         assertThat(retrievedSong.getId()).isEqualTo(song.getId());
 
         assertThatThrownBy(() -> playlist.addSong(retrievedSong))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Song already exists in the playlist");
+                .isInstanceOfSatisfying(
+                        BusinessException.class,
+                        exception -> assertThat(exception.getErrorCode())
+                                .isEqualTo(ErrorCode.DUPLICATE_SONG)
+                );
 
         assertThat(playlist.getTracks()).hasSize(1);
     }

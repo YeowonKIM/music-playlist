@@ -1,5 +1,7 @@
 package com.example.musicplaylist.playlist.domain;
 
+import com.example.musicplaylist.common.exception.BusinessException;
+import com.example.musicplaylist.common.exception.ErrorCode;
 import com.example.musicplaylist.song.domain.Song;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -44,17 +46,18 @@ public class Playlist {
         return List.copyOf(tracks);
     }
 
-    // TODO: Refactor exception handling
     public void addSong(Song song) {
         if (song == null) {
-            throw new IllegalArgumentException("Song must not be null");
+            throw new BusinessException(ErrorCode.INVALID_SONG);
         }
 
         boolean alreadyExists = tracks.stream()
-                .anyMatch(track -> track.getSong() == song || (song.getId() != null && song.getId().equals(track.getSong().getId())));
+                .anyMatch(track -> track.getSong() == song ||
+                        (song.getId() != null &&
+                                song.getId().equals(track.getSong().getId())));
 
         if (alreadyExists) {
-            throw new IllegalArgumentException("Song already exists in the playlist");
+            throw new BusinessException(ErrorCode.DUPLICATE_SONG);
         }
 
         tracks.add(new PlaylistTrack(this, song, tracks.size()));
