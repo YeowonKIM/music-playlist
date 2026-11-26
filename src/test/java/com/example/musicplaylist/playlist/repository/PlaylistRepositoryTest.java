@@ -47,7 +47,7 @@ public class PlaylistRepositoryTest {
     @Test
     void shouldPersistPlaylistWithTracks() {
         Song firstSong = songRepository.save(createSong());
-        Song secondSong = songRepository.save(new Song("Hello", "Adele", "Pop", 295, "music/hello.mp3"));
+        Song secondSong = songRepository.save(createSecondSong());
 
         Playlist playlist = Playlist.of("My Favorites", null);
         playlist.addSong(firstSong);
@@ -80,7 +80,7 @@ public class PlaylistRepositoryTest {
     @Test
     void shouldRetrieveTracksInPositionOrder() {
         Song firstSong = songRepository.save(createSong());
-        Song secondSong = songRepository.save(new Song("Hello", "Adele", "Pop", 295, "music/hello.mp3"));
+        Song secondSong = songRepository.save(createSecondSong());
 
         Playlist playlist = Playlist.of("My Favorites", null);
         playlist.addSong(firstSong);
@@ -183,8 +183,20 @@ public class PlaylistRepositoryTest {
     }
 
     private Song createSong() {
-        return new Song(
-                "Yellow", "Coldplay", "Rock", 240, "music/yellow.mp3"
-        );
+        return createSong("Yellow", "Coldplay", "Rock", 240, "music/yellow.mp3");
+    }
+
+    private Song createSecondSong() {
+        return createSong("Hello", "Adele", "Pop", 295, "music/hello.mp3");
+    }
+
+    private Song createSong(String title, String artist, String genre, int durationSeconds, String uri) {
+        return Song.builder()
+                .title(title)
+                .artist(artist)
+                .genre(genre)
+                .durationSeconds(durationSeconds)
+                .uri(uri)
+                .build();
     }
 }

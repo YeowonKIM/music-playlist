@@ -72,7 +72,16 @@ public class PlaylistTrackTest {
     }
 
     private Song createSong() {
-        return new Song("Yellow", "Coldplay", "Rock", 240, "music/yellow.mp3");
+        return createSong("Yellow", "Coldplay", "Rock", 240, "music/yellow.mp3");
     }
 
+    private Song createSong(String title, String artist, String genre, int durationSeconds, String uri) {
+        return Song.builder()
+                .title(title)
+                .artist(artist)
+                .genre(genre)
+                .durationSeconds(durationSeconds)
+                .uri(uri)
+                .build();
+    }
 }

@@ -201,8 +201,8 @@ public class PlaylistTest {
             Playlist playlist = createPlaylist();
 
             Song firstSong = createSong();
-            Song secondSong = new Song("Hello", "Adele", "Pop", 295, "music/hello.mp3");
-            Song thirdSong = new Song("Fix You", "Coldplay", "Rock", 275, "music/fix-you.mp3");
+            Song secondSong = createSong("Hello", "Adele", "Pop", 295, "music/hello.mp3");
+            Song thirdSong = createSong("Fix You", "Coldplay", "Rock", 275, "music/fix-you.mp3");
 
             playlist.addSong(firstSong);
             playlist.addSong(secondSong);
@@ -275,6 +275,16 @@ public class PlaylistTest {
     }
 
     private Song createSong() {
-        return new Song("Yellow", "Coldplay", "Rock", 240, "music/yellow.mp3");
+        return createSong("Yellow", "Coldplay", "Rock", 240, "music/yellow.mp3");
+    }
+
+    private Song createSong(String title, String artist, String genre, int durationSeconds, String uri) {
+        return Song.builder()
+                .title(title)
+                .artist(artist)
+                .genre(genre)
+                .durationSeconds(durationSeconds)
+                .uri(uri)
+                .build();
     }
 }

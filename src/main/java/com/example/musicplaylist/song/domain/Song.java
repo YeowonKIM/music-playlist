@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -42,7 +43,8 @@ public class Song {
     @Column(nullable = false, length = 2048)
     private String uri;
 
-    public Song(String title, String artist, String genre, int durationSeconds, String uri) {
+    @Builder
+    private Song(String title, String artist, String genre, int durationSeconds, String uri) {
         this.title = title;
         this.artist = artist;
         this.genre = genre;

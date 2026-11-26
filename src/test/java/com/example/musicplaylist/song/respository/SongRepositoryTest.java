@@ -19,13 +19,13 @@ public class SongRepositoryTest {
 
     @Test
     void shouldPersistAndRetrieveSong() {
-        Song song = new Song(
-                "Yellow",
-                "Coldplay",
-                "Rock",
-                240,
-                "music/yellow.mp3"
-        );
+        Song song = Song.builder()
+                .title("Yellow")
+                .artist("Coldplay")
+                .genre("Rock")
+                .durationSeconds(240)
+                .uri("music/yellow.mp3")
+                .build();
 
         Song savedSong = songRepository.saveAndFlush(song);
 

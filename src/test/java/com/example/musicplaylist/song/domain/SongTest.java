@@ -29,7 +29,7 @@ public class SongTest {
 
     @Test
     void shouldCreateValidSong() {
-        Song song = new Song("Yellow", "Coldplay", "Rock", 240, "music/yellow.mp3");
+        Song song = validSongBuilder().build();
 
         assertThat(validator.validate(song)).isEmpty();
         assertThat(song.getId()).isNull();
@@ -44,7 +44,9 @@ public class SongTest {
     @NullAndEmptySource
     @ValueSource(strings = {" ", "   "})
     void shouldRejectBlankTitle(String title) {
-        Song song = new Song(title, "Coldplay", "Rock", 240, "music/yellow.mp3");
+        Song song = validSongBuilder()
+                .title(title)
+                .build();
 
         assertThat(validator.validate(song))
                 .extracting(v -> v.getPropertyPath().toString())
@@ -55,7 +57,9 @@ public class SongTest {
     @NullAndEmptySource
     @ValueSource(strings = {" ", "   "})
     void shouldRejectBlankArtist(String artist) {
-        Song song = new Song("Yellow", artist, "Rock", 240, "music/yellow.mp3");
+        Song song = validSongBuilder()
+                .artist(artist)
+                .build();
 
         assertThat(validator.validate(song))
                 .extracting(v -> v.getPropertyPath().toString())
@@ -66,7 +70,9 @@ public class SongTest {
     @NullAndEmptySource
     @ValueSource(strings = {" ", "   "})
     void shouldRejectBlankGenre(String genre) {
-        Song song = new Song("Yellow", "Coldplay", genre, 240, "music/yellow.mp3");
+        Song song = validSongBuilder()
+                .genre(genre)
+                .build();
 
         assertThat(validator.validate(song))
                 .extracting(v -> v.getPropertyPath().toString())
@@ -76,7 +82,9 @@ public class SongTest {
     @ParameterizedTest
     @ValueSource(ints = {0, -1, -100})
     void shouldRejectNonPositiveDuration(int durationSeconds) {
-        Song song = new Song("Yellow", "Coldplay", "Rock", durationSeconds, "music/yellow.mp3");
+        Song song = validSongBuilder()
+                .durationSeconds(durationSeconds)
+                .build();
 
         assertThat(validator.validate(song))
                 .extracting(v -> v.getPropertyPath().toString())
@@ -87,7 +95,9 @@ public class SongTest {
     @NullAndEmptySource
     @ValueSource(strings = {" ", "   "})
     void shouldRejectBlankUri(String uri) {
-        Song song = new Song("Yellow", "Coldplay", "Rock", 240, uri);
+        Song song = validSongBuilder()
+                .uri(uri)
+                .build();
 
         assertThat(validator.validate(song))
                 .extracting(v -> v.getPropertyPath().toString())
@@ -96,18 +106,26 @@ public class SongTest {
 
     @Test
     void shouldRejectOversizedFields() {
-        Song song = new Song(
-                "a".repeat(256),
-                "a".repeat(256),
-                "a".repeat(256),
-                240,
-                "a".repeat(2049)
-        );
+        Song song = validSongBuilder()
+                .title("a".repeat(256))
+                .artist("a".repeat(256))
+                .genre("a".repeat(256))
+                .uri("a".repeat(2049))
+                .build();
 
         assertThat(validator.validate(song))
                 .extracting(v -> v.getPropertyPath().toString())
                 .containsExactlyInAnyOrder(
                         "title", "artist", "genre", "uri"
                 );
+    }
+
+    private Song.SongBuilder validSongBuilder() {
+        return Song.builder()
+                .title("Yellow")
+                .artist("Coldplay")
+                .genre("Rock")
+                .durationSeconds(240)
+                .uri("music/yellow.mp3");
     }
 }
