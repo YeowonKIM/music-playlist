@@ -30,9 +30,9 @@ public class PlaylistTrackTest {
     @ParameterizedTest
     @ValueSource(ints = {0, 1, 10})
     void shouldCreateValidPlaylistTrack(int position) {
-        Playlist playlist = new Playlist("My Favorites", null);
+        Playlist playlist = Playlist.of("My Favorites", null);
         Song song = createSong();
-        PlaylistTrack track = new PlaylistTrack(playlist, song, position);
+        PlaylistTrack track = PlaylistTrack.of(playlist, song, position);
 
         assertThat(validator.validate(track)).isEmpty();
         assertThat(track.getId()).isNull();
@@ -43,7 +43,7 @@ public class PlaylistTrackTest {
 
     @Test
     void shouldRejectNullPlaylist() {
-        PlaylistTrack track = new PlaylistTrack(null, createSong(), 0);
+        PlaylistTrack track = PlaylistTrack.of(null, createSong(), 0);
 
         assertThat(validator.validate(track))
                 .extracting(v -> v.getPropertyPath().toString())
@@ -52,8 +52,8 @@ public class PlaylistTrackTest {
 
     @Test
     void shouldRejectNullSong() {
-        Playlist playlist = new Playlist("My Favorites", null);
-        PlaylistTrack track = new PlaylistTrack(playlist, null, 0);
+        Playlist playlist = Playlist.of("My Favorites", null);
+        PlaylistTrack track = PlaylistTrack.of(playlist, null, 0);
 
         assertThat(validator.validate(track))
                 .extracting(v -> v.getPropertyPath().toString())
@@ -63,8 +63,8 @@ public class PlaylistTrackTest {
     @ParameterizedTest
     @ValueSource(ints = {-1, -10})
     void shouldRejectNegativePosition(int position) {
-        Playlist playlist = new Playlist("My Favorites", null);
-        PlaylistTrack track = new PlaylistTrack(playlist, createSong(), position);
+        Playlist playlist = Playlist.of("My Favorites", null);
+        PlaylistTrack track = PlaylistTrack.of(playlist, createSong(), position);
 
         assertThat(validator.validate(track))
                 .extracting(v -> v.getPropertyPath().toString())

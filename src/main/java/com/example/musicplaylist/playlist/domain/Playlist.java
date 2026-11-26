@@ -12,7 +12,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 @Getter
 @Entity
@@ -37,9 +36,13 @@ public class Playlist {
     @OrderBy("position ASC")
     private List<PlaylistTrack> tracks = new ArrayList<>();
 
-    public Playlist(String name, String description) {
+    private Playlist(String name, String description) {
         this.name = name;
         this.description = description;
+    }
+
+    public static Playlist of(String name, String description) {
+        return new Playlist(name, description);
     }
 
     public List<PlaylistTrack> getTracks() {
@@ -60,6 +63,14 @@ public class Playlist {
             throw new BusinessException(ErrorCode.DUPLICATE_SONG);
         }
 
-        tracks.add(new PlaylistTrack(this, song, tracks.size()));
+        tracks.add(PlaylistTrack.of(this, song, tracks.size()));
+    }
+
+    public void rename(String name) {
+        this.name = name;
+    }
+
+    public void updateDescription(String description) {
+        this.description = description;
     }
 }

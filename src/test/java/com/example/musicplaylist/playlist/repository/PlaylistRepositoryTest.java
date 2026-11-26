@@ -29,7 +29,7 @@ public class PlaylistRepositoryTest {
 
     @Test
     void shouldPersistAndRetrievePlaylist() {
-        Playlist playlist = new Playlist("My Favorites", "My favorite songs");
+        Playlist playlist = Playlist.of("My Favorites", "My favorite songs");
         Playlist savedPlaylist = playlistRepository.saveAndFlush(playlist);
 
         assertThat(savedPlaylist.getId()).isNotNull();
@@ -49,7 +49,7 @@ public class PlaylistRepositoryTest {
         Song firstSong = songRepository.save(createSong());
         Song secondSong = songRepository.save(new Song("Hello", "Adele", "Pop", 295, "music/hello.mp3"));
 
-        Playlist playlist = new Playlist("My Favorites", null);
+        Playlist playlist = Playlist.of("My Favorites", null);
         playlist.addSong(firstSong);
         playlist.addSong(secondSong);
 
@@ -82,7 +82,7 @@ public class PlaylistRepositoryTest {
         Song firstSong = songRepository.save(createSong());
         Song secondSong = songRepository.save(new Song("Hello", "Adele", "Pop", 295, "music/hello.mp3"));
 
-        Playlist playlist = new Playlist("My Favorites", null);
+        Playlist playlist = Playlist.of("My Favorites", null);
         playlist.addSong(firstSong);
         playlist.addSong(secondSong);
 
@@ -115,7 +115,7 @@ public class PlaylistRepositoryTest {
     void shouldRejectDuplicateSongWithSameId() {
         Song song = songRepository.saveAndFlush(createSong());
 
-        Playlist playlist = new Playlist("My Favorites", null);
+        Playlist playlist = Playlist.of("My Favorites", null);
         playlist.addSong(song);
 
         entityManager.detach(song);
@@ -140,7 +140,7 @@ public class PlaylistRepositoryTest {
     void shouldEnforceUniquePlaylistSongConstraint() {
         Song song = songRepository.saveAndFlush(createSong());
 
-        Playlist playlist = new Playlist("My Favorites", null);
+        Playlist playlist = Playlist.of("My Favorites", null);
         playlist.addSong(song);
         Playlist savedPlaylist = playlistRepository.saveAndFlush(playlist);
 
@@ -160,7 +160,7 @@ public class PlaylistRepositoryTest {
     void shouldDeleteTracksWithoutDeletingSongs() {
         Song song = songRepository.saveAndFlush(createSong());
 
-        Playlist playlist = new Playlist("My Favorites", null);
+        Playlist playlist = Playlist.of("My Favorites", null);
         playlist.addSong(song);
 
         Playlist savedPlaylist = playlistRepository.saveAndFlush(playlist);

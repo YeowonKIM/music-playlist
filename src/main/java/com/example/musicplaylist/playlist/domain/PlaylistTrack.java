@@ -33,9 +33,13 @@ public class PlaylistTrack {
     @Column(nullable = false)
     private int position;
 
-    PlaylistTrack(Playlist playlist, Song song, int position) {
+    private PlaylistTrack(Playlist playlist, Song song, int position) {
         this.playlist = playlist;
         this.song = song;
         this.position = position;
+    }
+
+    static PlaylistTrack of(Playlist playlist, Song song, int position) {
+        return new PlaylistTrack(playlist, song, position);
     }
 }
