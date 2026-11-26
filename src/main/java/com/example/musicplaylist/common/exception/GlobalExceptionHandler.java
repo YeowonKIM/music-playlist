@@ -87,7 +87,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private HttpStatus resolveHttpStatus(ErrorCode errorCode) {
         return switch (errorCode) {
-            case INVALID_REQUEST, VALIDATION_FAILED, INVALID_SONG, INVALID_POSITION -> HttpStatus.BAD_REQUEST;
+            case INVALID_REQUEST, VALIDATION_FAILED, INVALID_SONG, INVALID_POSITION, INVALID_SHUFFLE_STRATEGY -> HttpStatus.BAD_REQUEST;
             case PLAYLIST_NOT_FOUND, SONG_NOT_FOUND, SONG_NOT_IN_PLAYLIST -> HttpStatus.NOT_FOUND;
             case DUPLICATE_SONG -> HttpStatus.CONFLICT;
             case INTERNAL_SERVER_ERROR -> HttpStatus.INTERNAL_SERVER_ERROR;
