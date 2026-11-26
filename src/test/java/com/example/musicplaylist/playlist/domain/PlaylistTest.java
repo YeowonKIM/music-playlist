@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -268,6 +269,160 @@ public class PlaylistTest {
 
             assertThat(playlist.getTracks()).hasSize(1);
         }
+
+        // Song removal tests
+        @Test
+        void shouldReindexTracksAfterRemovingFirstSong() {
+            Playlist playlist = Playlist.of("My Playlist", "Description");
+
+            Song firstSong = createSong(1L);
+            Song secondSong = createSong(2L);
+            Song thirdSong = createSong(3L);
+
+            playlist.addSong(firstSong);
+            playlist.addSong(secondSong);
+            playlist.addSong(thirdSong);
+
+            playlist.removeSong(1L);
+
+            assertThat(playlist.getTracks())
+                    .extracting(PlaylistTrack::getSong)
+                    .containsExactly(secondSong, thirdSong);
+
+            assertThat(playlist.getTracks())
+                    .extracting(PlaylistTrack::getPosition)
+                    .containsExactly(0, 1);
+        }
+
+        @Test
+        void shouldReindexTracksAfterRemovingMiddleSong() {
+            Playlist playlist = Playlist.of("My Playlist", "Description");
+
+            Song firstSong = createSong(1L);
+            Song secondSong = createSong(2L);
+            Song thirdSong = createSong(3L);
+
+            playlist.addSong(firstSong);
+            playlist.addSong(secondSong);
+            playlist.addSong(thirdSong);
+
+            playlist.removeSong(2L);
+
+            assertThat(playlist.getTracks())
+                    .extracting(PlaylistTrack::getSong)
+                    .containsExactly(firstSong, thirdSong);
+
+            assertThat(playlist.getTracks())
+                    .extracting(PlaylistTrack::getPosition)
+                    .containsExactly(0, 1);
+        }
+
+        @Test
+        void shouldRemoveLastSong() {
+            Playlist playlist = Playlist.of("My Playlist", "Description");
+
+            Song firstSong = createSong(1L);
+            Song secondSong = createSong(2L);
+            Song thirdSong = createSong(3L);
+
+            playlist.addSong(firstSong);
+            playlist.addSong(secondSong);
+            playlist.addSong(thirdSong);
+
+            playlist.removeSong(3L);
+
+            assertThat(playlist.getTracks())
+                    .extracting(PlaylistTrack::getSong)
+                    .containsExactly(firstSong, secondSong);
+
+            assertThat(playlist.getTracks())
+                    .extracting(PlaylistTrack::getPosition)
+                    .containsExactly(0, 1);
+        }
+
+        @Test
+        void shouldRemoveOnlySong() {
+            Playlist playlist = Playlist.of("My Playlist", "Description");
+            Song song = createSong(1L);
+
+            playlist.addSong(song);
+
+            playlist.removeSong(1L);
+
+            assertThat(playlist.getTracks()).isEmpty();
+        }
+
+        @Test
+        void shouldRejectNullSongId() {
+            Playlist playlist = Playlist.of("My Playlist", "Description");
+            Song song = createSong(1L);
+
+            playlist.addSong(song);
+
+            assertThatThrownBy(() -> playlist.removeSong(null))
+                    .isInstanceOfSatisfying(
+                            BusinessException.class,
+                            exception -> {
+                                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST);
+                                assertThat(exception.getMessage()).isEqualTo(ErrorCode.INVALID_REQUEST.getMessage());
+                            }
+                    );
+
+            assertThat(playlist.getTracks())
+                    .extracting(PlaylistTrack::getSong)
+                    .containsExactly(song);
+        }
+
+        @Test
+        void shouldRejectSongRemovalNotInPlaylist() {
+            Playlist playlist = Playlist.of("My Playlist", "Description");
+            Song song = createSong(1L);
+
+            playlist.addSong(song);
+
+            assertThatThrownBy(() -> playlist.removeSong(999L))
+                    .isInstanceOfSatisfying(
+                            BusinessException.class,
+                            exception -> {
+                                assertThat(exception.getErrorCode())
+                                        .isEqualTo(ErrorCode.SONG_NOT_IN_PLAYLIST);
+                                assertThat(exception.getMessage())
+                                        .isEqualTo(ErrorCode.SONG_NOT_IN_PLAYLIST.getMessage());
+                            }
+                    );
+
+            assertThat(playlist.getTracks())
+                    .extracting(PlaylistTrack::getSong)
+                    .containsExactly(song);
+
+            assertThat(playlist.getTracks())
+                    .extracting(PlaylistTrack::getPosition)
+                    .containsExactly(0);
+        }
+        @Test
+        void shouldAppendSongAfterRemoval() {
+            Playlist playlist = Playlist.of("My Playlist", "Description");
+
+            Song firstSong = createSong(1L);
+            Song secondSong = createSong(2L);
+            Song thirdSong = createSong(3L);
+            Song newSong = createSong(4L);
+
+            playlist.addSong(firstSong);
+            playlist.addSong(secondSong);
+            playlist.addSong(thirdSong);
+
+            playlist.removeSong(2L);
+            playlist.addSong(newSong);
+
+            assertThat(playlist.getTracks())
+                    .extracting(PlaylistTrack::getSong)
+                    .containsExactly(firstSong, thirdSong, newSong);
+
+            assertThat(playlist.getTracks())
+                    .extracting(PlaylistTrack::getPosition)
+                    .containsExactly(0, 1, 2);
+        }
     }
 
     private Playlist createPlaylist() {
@@ -286,5 +441,11 @@ public class PlaylistTest {
                 .durationSeconds(durationSeconds)
                 .uri(uri)
                 .build();
+    }
+
+    private Song createSong(Long id) {
+        Song song = createSong();
+        ReflectionTestUtils.setField(song, "id", id);
+        return song;
     }
 }

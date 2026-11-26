@@ -73,4 +73,26 @@ public class Playlist {
     public void updateDescription(String description) {
         this.description = description;
     }
+
+    public void removeSong(Long songId) {
+        if (songId == null) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST);
+        }
+
+        boolean removed = tracks.removeIf(
+                track -> songId.equals(track.getSong().getId())
+        );
+
+        if (!removed) {
+            throw new BusinessException(ErrorCode.SONG_NOT_IN_PLAYLIST);
+        }
+
+        updateTrackPositions();
+    }
+
+    private void updateTrackPositions() {
+        for (int i = 0; i < tracks.size(); i++) {
+            tracks.get(i).updatePosition(i);
+        }
+    }
 }

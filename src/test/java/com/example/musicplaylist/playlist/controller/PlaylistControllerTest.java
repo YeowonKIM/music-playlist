@@ -2,12 +2,15 @@ package com.example.musicplaylist.playlist.controller;
 
 import com.example.musicplaylist.common.exception.BusinessException;
 import com.example.musicplaylist.common.exception.ErrorCode;
+import com.example.musicplaylist.playlist.dto.AddSongRequest;
 import com.example.musicplaylist.playlist.dto.CreatePlaylistRequest;
 import com.example.musicplaylist.playlist.dto.PlaylistResponse;
 import com.example.musicplaylist.playlist.dto.UpdatePlaylistRequest;
 import com.example.musicplaylist.playlist.service.PlaylistService;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
@@ -412,6 +415,162 @@ public class PlaylistControllerTest {
                     .andExpect(jsonPath("$.message").value("An unexpected error occurred"));
 
             verify(playlistService).getAllPlaylists();
+        }
+    }
+
+    // Song addition & removal tests
+    @Nested
+    class AddSongTests {
+
+        @Test
+        void shouldAddSongToPlaylist() throws Exception {
+            mockMvc.perform(post(BASE_URL + "/1/tracks")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                {
+                                    "songId": 2
+                                }
+                                """))
+                    .andExpect(status().isCreated())
+                    .andExpect(content().string(""));
+
+            verify(playlistService)
+                    .addSongToPlaylist(1L, new AddSongRequest(2L));
+        }
+
+        @Test
+        void shouldReturnNotFoundWhenPlaylistDoesNotExist() throws Exception {
+            doThrow(new BusinessException(ErrorCode.PLAYLIST_NOT_FOUND))
+                    .when(playlistService)
+                    .addSongToPlaylist(999L, new AddSongRequest(2L));
+
+            mockMvc.perform(post(BASE_URL + "/999/tracks")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                {
+                                    "songId": 2
+                                }
+                                """))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.status").value(404))
+                    .andExpect(jsonPath("$.code").value("PLAYLIST_NOT_FOUND"))
+                    .andExpect(jsonPath("$.message")
+                            .value(ErrorCode.PLAYLIST_NOT_FOUND.getMessage()));
+        }
+
+        @Test
+        void shouldReturnNotFoundWhenSongDoesNotExist() throws Exception {
+            doThrow(new BusinessException(ErrorCode.SONG_NOT_FOUND))
+                    .when(playlistService)
+                    .addSongToPlaylist(1L, new AddSongRequest(999L));
+
+            mockMvc.perform(post(BASE_URL + "/1/tracks")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                {
+                                    "songId": 999
+                                }
+                                """))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.status").value(404))
+                    .andExpect(jsonPath("$.code").value("SONG_NOT_FOUND"))
+                    .andExpect(jsonPath("$.message")
+                            .value(ErrorCode.SONG_NOT_FOUND.getMessage()));
+        }
+
+        @Test
+        void shouldReturnConflictWhenSongAlreadyExists() throws Exception {
+            doThrow(new BusinessException(ErrorCode.DUPLICATE_SONG))
+                    .when(playlistService)
+                    .addSongToPlaylist(1L, new AddSongRequest(2L));
+
+            mockMvc.perform(post(BASE_URL + "/1/tracks")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                {
+                                    "songId": 2
+                                }
+                                """))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.status").value(409))
+                    .andExpect(jsonPath("$.code").value("DUPLICATE_SONG"))
+                    .andExpect(jsonPath("$.message")
+                            .value(ErrorCode.DUPLICATE_SONG.getMessage()));
+        }
+
+        @Test
+        void shouldRejectMissingSongId() throws Exception {
+            mockMvc.perform(post(BASE_URL + "/1/tracks")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.status").value(400))
+                    .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                    .andExpect(jsonPath("$.message")
+                            .value(containsString("songId:")));
+
+            verifyNoInteractions(playlistService);
+        }
+
+        @ParameterizedTest
+        @ValueSource(longs = {0L, -1L})
+        void shouldRejectNonPositiveSongId(long songId) throws Exception {
+            mockMvc.perform(post(BASE_URL + "/1/tracks")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                {
+                                    "songId": %d
+                                }
+                                """.formatted(songId)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.status").value(400))
+                    .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                    .andExpect(jsonPath("$.message")
+                            .value(containsString("songId:")));
+
+            verifyNoInteractions(playlistService);
+        }
+    }
+
+    @Nested
+    class RemoveSongTests {
+
+        @Test
+        void shouldRemoveSongFromPlaylist() throws Exception {
+            mockMvc.perform(delete(BASE_URL + "/1/tracks/2"))
+                    .andExpect(status().isNoContent())
+                    .andExpect(content().string(""));
+
+            verify(playlistService)
+                    .removeSongFromPlaylist(1L, 2L);
+        }
+
+        @Test
+        void shouldReturnNotFoundWhenPlaylistDoesNotExist() throws Exception {
+            doThrow(new BusinessException(ErrorCode.PLAYLIST_NOT_FOUND))
+                    .when(playlistService)
+                    .removeSongFromPlaylist(999L, 2L);
+
+            mockMvc.perform(delete(BASE_URL + "/999/tracks/2"))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.status").value(404))
+                    .andExpect(jsonPath("$.code").value("PLAYLIST_NOT_FOUND"))
+                    .andExpect(jsonPath("$.message")
+                            .value(ErrorCode.PLAYLIST_NOT_FOUND.getMessage()));
+        }
+
+        @Test
+        void shouldReturnNotFoundWhenSongIsNotInPlaylist() throws Exception {
+            doThrow(new BusinessException(ErrorCode.SONG_NOT_IN_PLAYLIST))
+                    .when(playlistService)
+                    .removeSongFromPlaylist(1L, 999L);
+
+            mockMvc.perform(delete(BASE_URL + "/1/tracks/999"))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.status").value(404))
+                    .andExpect(jsonPath("$.code").value("SONG_NOT_IN_PLAYLIST"))
+                    .andExpect(jsonPath("$.message")
+                            .value(ErrorCode.SONG_NOT_IN_PLAYLIST.getMessage()));
         }
     }
 

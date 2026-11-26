@@ -1,5 +1,6 @@
 package com.example.musicplaylist.playlist.controller;
 
+import com.example.musicplaylist.playlist.dto.AddSongRequest;
 import com.example.musicplaylist.playlist.dto.CreatePlaylistRequest;
 import com.example.musicplaylist.playlist.dto.PlaylistResponse;
 import com.example.musicplaylist.playlist.dto.UpdatePlaylistRequest;
@@ -45,6 +46,21 @@ public class PlaylistController {
     @DeleteMapping("/{playlistId}")
     public ResponseEntity<Void> deletePlaylist(@PathVariable Long playlistId) {
         playlistService.deletePlaylist(playlistId);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    // Dynamic song addition & removal
+    @PostMapping("/{playlistId}/tracks")
+    public ResponseEntity<Void> addSongToPlaylist(@PathVariable Long playlistId, @Valid @RequestBody AddSongRequest request) {
+        playlistService.addSongToPlaylist(playlistId, request);
+
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @DeleteMapping("/{playlistId}/tracks/{songId}")
+    public ResponseEntity<Void> removeSongFromPlaylist(@PathVariable Long playlistId, @PathVariable Long songId) {
+        playlistService.removeSongFromPlaylist(playlistId, songId);
 
         return ResponseEntity.noContent().build();
     }

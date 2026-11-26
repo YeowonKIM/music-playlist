@@ -3,10 +3,14 @@ package com.example.musicplaylist.playlist.service;
 import com.example.musicplaylist.common.exception.BusinessException;
 import com.example.musicplaylist.common.exception.ErrorCode;
 import com.example.musicplaylist.playlist.domain.Playlist;
+import com.example.musicplaylist.playlist.domain.PlaylistTrack;
+import com.example.musicplaylist.playlist.dto.AddSongRequest;
 import com.example.musicplaylist.playlist.dto.CreatePlaylistRequest;
 import com.example.musicplaylist.playlist.dto.PlaylistResponse;
 import com.example.musicplaylist.playlist.dto.UpdatePlaylistRequest;
 import com.example.musicplaylist.playlist.repository.PlaylistRepository;
+import com.example.musicplaylist.song.domain.Song;
+import com.example.musicplaylist.song.repository.SongRepository;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,6 +32,10 @@ public class PlaylistServiceTest {
 
     @Mock
     private PlaylistRepository playlistRepository;
+
+    @Mock
+    private SongRepository songRepository;
+
 
     @InjectMocks
     private PlaylistService playlistService;
@@ -232,6 +240,181 @@ public class PlaylistServiceTest {
         }
     }
 
+    // Song addition & removal tests
+    @Nested
+    class AddSongTests {
+
+        @Test
+        void shouldAddSongToPlaylist() {
+            Playlist playlist = createPlaylist();
+            Song song = createSong(1L);
+            AddSongRequest request = new AddSongRequest(1L);
+
+            when(playlistRepository.findById(1L))
+                    .thenReturn(Optional.of(playlist));
+
+            when(songRepository.findById(1L))
+                    .thenReturn(Optional.of(song));
+
+            playlistService.addSongToPlaylist(1L, request);
+
+            assertThat(playlist.getTracks())
+                    .extracting(PlaylistTrack::getSong)
+                    .containsExactly(song);
+
+            verify(playlistRepository).findById(1L);
+            verify(songRepository).findById(1L);
+            verify(playlistRepository, never()).save(any(Playlist.class));
+        }
+
+        @Test
+        void shouldRejectAdditionWhenPlaylistNotFound() {
+            AddSongRequest request = new AddSongRequest(1L);
+
+            when(playlistRepository.findById(999L))
+                    .thenReturn(Optional.empty());
+
+            assertThatThrownBy(() ->
+                    playlistService.addSongToPlaylist(999L, request))
+                    .isInstanceOfSatisfying(
+                            BusinessException.class,
+                            exception -> {
+                                assertThat(exception.getErrorCode())
+                                        .isEqualTo(ErrorCode.PLAYLIST_NOT_FOUND);
+                                assertThat(exception.getMessage())
+                                        .isEqualTo(ErrorCode.PLAYLIST_NOT_FOUND.getMessage());
+                            }
+                    );
+
+            verifyNoInteractions(songRepository);
+        }
+
+        @Test
+        void shouldRejectAdditionWhenSongNotFound() {
+            Playlist playlist = createPlaylist();
+            AddSongRequest request = new AddSongRequest(999L);
+
+            when(playlistRepository.findById(1L))
+                    .thenReturn(Optional.of(playlist));
+
+            when(songRepository.findById(999L))
+                    .thenReturn(Optional.empty());
+
+            assertThatThrownBy(() ->
+                    playlistService.addSongToPlaylist(1L, request))
+                    .isInstanceOfSatisfying(
+                            BusinessException.class,
+                            exception -> {
+                                assertThat(exception.getErrorCode())
+                                        .isEqualTo(ErrorCode.SONG_NOT_FOUND);
+                                assertThat(exception.getMessage())
+                                        .isEqualTo(ErrorCode.SONG_NOT_FOUND.getMessage());
+                            }
+                    );
+
+            assertThat(playlist.getTracks()).isEmpty();
+        }
+
+        @Test
+        void shouldRejectDuplicateSong() {
+            Playlist playlist = createPlaylist();
+            Song song = createSong(1L);
+            AddSongRequest request = new AddSongRequest(1L);
+
+            playlist.addSong(song);
+
+            when(playlistRepository.findById(1L))
+                    .thenReturn(Optional.of(playlist));
+
+            when(songRepository.findById(1L))
+                    .thenReturn(Optional.of(song));
+
+            assertThatThrownBy(() ->
+                    playlistService.addSongToPlaylist(1L, request))
+                    .isInstanceOfSatisfying(
+                            BusinessException.class,
+                            exception -> {
+                                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.DUPLICATE_SONG);
+                                assertThat(exception.getMessage()).isEqualTo(ErrorCode.DUPLICATE_SONG.getMessage());
+                            }
+                    );
+
+            assertThat(playlist.getTracks())
+                    .extracting(PlaylistTrack::getSong)
+                    .containsExactly(song);
+        }
+
+        @Nested
+        class RemoveSongTests {
+
+            @Test
+            void shouldRemoveSongFromPlaylist() {
+                Playlist playlist = createPlaylist();
+                Song song = createSong(1L);
+
+                playlist.addSong(song);
+
+                when(playlistRepository.findById(1L))
+                        .thenReturn(Optional.of(playlist));
+
+                playlistService.removeSongFromPlaylist(1L, 1L);
+
+                assertThat(playlist.getTracks()).isEmpty();
+
+                verify(playlistRepository).findById(1L);
+                verifyNoInteractions(songRepository);
+                verify(playlistRepository, never()).save(any(Playlist.class));
+            }
+
+            @Test
+            void shouldRejectRemovalWhenPlaylistNotFound() {
+                when(playlistRepository.findById(999L))
+                        .thenReturn(Optional.empty());
+
+                assertThatThrownBy(() ->
+                        playlistService.removeSongFromPlaylist(999L, 1L))
+                        .isInstanceOfSatisfying(
+                                BusinessException.class,
+                                exception -> {
+                                    assertThat(exception.getErrorCode())
+                                            .isEqualTo(ErrorCode.PLAYLIST_NOT_FOUND);
+                                    assertThat(exception.getMessage())
+                                            .isEqualTo(ErrorCode.PLAYLIST_NOT_FOUND.getMessage());
+                                }
+                        );
+
+                verifyNoInteractions(songRepository);
+            }
+
+            @Test
+            void shouldRejectRemovalWhenSongNotInPlaylist() {
+                Playlist playlist = createPlaylist();
+                Song song = createSong(1L);
+
+                playlist.addSong(song);
+
+                when(playlistRepository.findById(1L))
+                        .thenReturn(Optional.of(playlist));
+
+                assertThatThrownBy(() ->
+                        playlistService.removeSongFromPlaylist(1L, 999L))
+                        .isInstanceOfSatisfying(
+                                BusinessException.class,
+                                exception -> {
+                                    assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.SONG_NOT_IN_PLAYLIST);
+                                    assertThat(exception.getMessage()).isEqualTo(ErrorCode.SONG_NOT_IN_PLAYLIST.getMessage());
+                                }
+                        );
+
+                assertThat(playlist.getTracks())
+                        .extracting(PlaylistTrack::getSong)
+                        .containsExactly(song);
+
+                verifyNoInteractions(songRepository);
+            }
+        }
+    }
+
     private Playlist createPlaylist() {
         return createPlaylist(1L, "My Favorites", "My favorite songs");
     }
@@ -240,5 +423,19 @@ public class PlaylistServiceTest {
         Playlist playlist = Playlist.of(name, description);
         ReflectionTestUtils.setField(playlist, "id", id);
         return playlist;
+    }
+
+    private Song createSong(Long id) {
+        Song song = Song.builder()
+                .title("Yellow")
+                .artist("Coldplay")
+                .genre("Rock")
+                .durationSeconds(240)
+                .uri("music/yellow.mp3")
+                .build();
+
+        ReflectionTestUtils.setField(song, "id", id);
+
+        return song;
     }
 }
