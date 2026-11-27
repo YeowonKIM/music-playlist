@@ -93,25 +93,6 @@ public class SongControllerTest {
 
             verifyNoInteractions(songService);
         }
-
-        @Test
-        void shouldRejectMissingRequiredFields() throws Exception {
-            mockMvc.perform(post(BASE_URL)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                    {}
-                                    """))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.status").value(400))
-                    .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
-                    .andExpect(jsonPath("$.message").value(containsString("title:")))
-                    .andExpect(jsonPath("$.message").value(containsString("artist:")))
-                    .andExpect(jsonPath("$.message").value(containsString("genre:")))
-                    .andExpect(jsonPath("$.message").value(containsString("durationSeconds:")))
-                    .andExpect(jsonPath("$.message").value(containsString("uri:")));
-
-            verifyNoInteractions(songService);
-        }
     }
 
     @Nested

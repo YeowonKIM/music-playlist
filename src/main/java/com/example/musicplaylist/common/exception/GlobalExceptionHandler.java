@@ -22,10 +22,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<ErrorResponse> handleBusinessException(BusinessException exception) {
         HttpStatus status = resolveHttpStatus(exception.getErrorCode());
 
-        return buildErrorResponse(status,
-                exception.getErrorCode(),
-                exception.getMessage()
-        );
+        return buildErrorResponse(status, exception.getErrorCode(), exception.getMessage());
     }
 
     // Handles request DTO validation failures
@@ -40,11 +37,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         ErrorCode errorCode = ErrorCode.VALIDATION_FAILED;
 
-        ErrorResponse response = new ErrorResponse(
-                status.value(),
-                errorCode,
-                message.isBlank() ? errorCode.getMessage() : message
-        );
+        ErrorResponse response = new ErrorResponse(status.value(), errorCode, message.isBlank() ? errorCode.getMessage() : message);
 
         return super.handleExceptionInternal(exception, response, headers, status, request);
     }
@@ -58,15 +51,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             log.error("Unexpected MVC error occurred", exception);
         }
 
-        ErrorCode errorCode = serverError
-                ? ErrorCode.INTERNAL_SERVER_ERROR
-                : ErrorCode.INVALID_REQUEST;
+        ErrorCode errorCode = serverError ? ErrorCode.INTERNAL_SERVER_ERROR : ErrorCode.INVALID_REQUEST;
 
-        ErrorResponse response = new ErrorResponse(
-                status.value(),
-                errorCode,
-                errorCode.getMessage()
-        );
+        ErrorResponse response = new ErrorResponse(status.value(), errorCode, errorCode.getMessage());
 
         return super.handleExceptionInternal(exception, response, headers, status, request);
     }
@@ -78,11 +65,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         ErrorCode errorCode = ErrorCode.INTERNAL_SERVER_ERROR;
 
-        return buildErrorResponse(
-                HttpStatus.INTERNAL_SERVER_ERROR,
-                errorCode,
-                errorCode.getMessage()
-        );
+        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, errorCode, errorCode.getMessage());
     }
 
     private HttpStatus resolveHttpStatus(ErrorCode errorCode) {
@@ -95,11 +78,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     private ResponseEntity<ErrorResponse> buildErrorResponse(HttpStatus status, ErrorCode errorCode, String message) {
-        ErrorResponse response = new ErrorResponse(
-                status.value(),
-                errorCode,
-                message
-        );
+        ErrorResponse response = new ErrorResponse(status.value(), errorCode, message);
 
         return ResponseEntity.status(status).body(response);
     }

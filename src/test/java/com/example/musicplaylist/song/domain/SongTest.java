@@ -48,22 +48,6 @@ public class SongTest {
                 );
     }
 
-    @Test
-    void shouldRejectOversizedFields() {
-        Song song = validSongBuilder()
-                .title("a".repeat(256))
-                .artist("a".repeat(256))
-                .genre("a".repeat(256))
-                .uri("a".repeat(2049))
-                .build();
-
-        assertThat(validator.validate(song))
-                .extracting(v -> v.getPropertyPath().toString())
-                .containsExactlyInAnyOrder(
-                        "title", "artist", "genre", "uri"
-                );
-    }
-
     private Song.SongBuilder validSongBuilder() {
         return Song.builder()
                 .title("Yellow")

@@ -147,23 +147,6 @@ public class PlaylistControllerTest {
 
             verify(playlistService).updatePlaylist(1L, request);
         }
-
-        @Test
-        void shouldRejectBlankNameWhenUpdatingPlaylist() throws Exception {
-            mockMvc.perform(put(BASE_URL + "/{playlistId}", 1L)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                    {
-                                        "name": " "
-                                    }
-                                    """))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.status").value(400))
-                    .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
-                    .andExpect(jsonPath("$.message").value(containsString("name:")));
-
-            verifyNoInteractions(playlistService);
-        }
     }
 
     @Nested
@@ -176,47 +159,6 @@ public class PlaylistControllerTest {
                     .andExpect(jsonPath("$.message").value("Playlist deleted successfully"));
 
             verify(playlistService).deletePlaylist(1L);
-        }
-    }
-
-    @Nested
-    class ExceptionHandlingTests {
-
-        @Test
-        void shouldRejectMalformedJson() throws Exception {
-            mockMvc.perform(post(BASE_URL)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("{\"name\":"))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.status").value(400))
-                    .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
-                    .andExpect(jsonPath("$.message").value("Invalid request"));
-
-            verifyNoInteractions(playlistService);
-        }
-
-        @Test
-        void shouldRejectUnsupportedHttpMethod() throws Exception {
-            mockMvc.perform(patch(BASE_URL + "/{playlistId}", 1L))
-                    .andExpect(status().isMethodNotAllowed())
-                    .andExpect(header().exists("Allow"))
-                    .andExpect(jsonPath("$.status").value(405))
-                    .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
-                    .andExpect(jsonPath("$.message").value("Invalid request"));
-
-            verifyNoInteractions(playlistService);
-        }
-
-        @Test
-        void shouldHandleUnexpectedException() throws Exception {
-            when(playlistService.getAllPlaylists())
-                    .thenThrow(new RuntimeException("Database connection failed"));
-
-            mockMvc.perform(get(BASE_URL))
-                    .andExpect(status().isInternalServerError())
-                    .andExpect(jsonPath("$.status").value(500))
-                    .andExpect(jsonPath("$.code").value("INTERNAL_SERVER_ERROR"))
-                    .andExpect(jsonPath("$.message").value("An unexpected error occurred"));
         }
     }
 

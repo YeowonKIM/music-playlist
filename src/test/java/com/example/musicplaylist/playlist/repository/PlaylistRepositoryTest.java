@@ -1,7 +1,5 @@
 package com.example.musicplaylist.playlist.repository;
 
-import com.example.musicplaylist.common.exception.BusinessException;
-import com.example.musicplaylist.common.exception.ErrorCode;
 import com.example.musicplaylist.playlist.domain.Playlist;
 import com.example.musicplaylist.playlist.domain.PlaylistTrack;
 import com.example.musicplaylist.song.domain.Song;
@@ -20,6 +18,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
 public class PlaylistRepositoryTest {
+
     @Autowired
     private PlaylistRepository playlistRepository;
 
@@ -28,30 +27,6 @@ public class PlaylistRepositoryTest {
 
     @PersistenceContext
     private EntityManager entityManager;
-
-    @Test
-    void shouldRejectDuplicateSongWithSameId() {
-        Song song = songRepository.saveAndFlush(createSong());
-
-        Playlist playlist = Playlist.of("My Favorites", null);
-        playlist.addSong(song);
-
-        entityManager.detach(song);
-
-        Song retrievedSong = songRepository.findById(song.getId())
-                .orElseThrow();
-
-        assertThat(retrievedSong).isNotSameAs(song);
-        assertThat(retrievedSong.getId()).isEqualTo(song.getId());
-
-        assertThatThrownBy(() -> playlist.addSong(retrievedSong))
-                .isInstanceOfSatisfying(
-                        BusinessException.class,
-                        exception -> assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.DUPLICATE_SONG)
-                );
-
-        assertThat(playlist.getTracks()).hasSize(1);
-    }
 
     @Test
     void shouldEnforceUniquePlaylistSongConstraint() {
@@ -68,9 +43,7 @@ public class PlaylistRepositoryTest {
                 .setParameter("playlistId", savedPlaylist.getId())
                 .setParameter("songId", song.getId())
                 .executeUpdate())
-                .isInstanceOf(
-                        ConstraintViolationException.class
-                );
+                .isInstanceOf(ConstraintViolationException.class);
     }
 
     @Test

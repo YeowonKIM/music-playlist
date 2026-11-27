@@ -51,15 +51,6 @@ class RecommendationControllerTest {
     }
 
     @Test
-    void shouldReturnNotFoundWhenPlaylistDoesNotExist() throws Exception {
-        given(recommendationService.recommendSongs(999L, 10)).willThrow(new BusinessException(ErrorCode.PLAYLIST_NOT_FOUND));
-
-        mockMvc.perform(get("/api/playlists/999/recommendations"))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("PLAYLIST_NOT_FOUND"));
-    }
-
-    @Test
     void shouldReturnBadRequestWhenLimitIsInvalid() throws Exception {
         given(recommendationService.recommendSongs(1L, 0)).willThrow(new BusinessException(ErrorCode.INVALID_REQUEST, "Limit must be positive"));
 

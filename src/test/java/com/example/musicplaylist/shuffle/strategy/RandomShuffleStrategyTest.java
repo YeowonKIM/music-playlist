@@ -19,7 +19,6 @@ class RandomShuffleStrategyTest {
         Song fourthSong = createSong("Clocks", "Coldplay", "Rock");
 
         List<Song> songs = List.of(firstSong, secondSong, thirdSong, fourthSong);
-
         List<Song> shuffledSongs = strategy.shuffle(songs);
 
         assertThat(shuffledSongs).isNotSameAs(songs).containsExactlyInAnyOrderElementsOf(songs);
@@ -27,19 +26,11 @@ class RandomShuffleStrategyTest {
     }
 
     @Test
-    void shouldHandleEmptyPlaylist() {
-        List<Song> shuffledSongs = strategy.shuffle(List.of());
-
-        assertThat(shuffledSongs).isEmpty();
-    }
-
-    @Test
-    void shouldHandleSingleSongPlaylist() {
+    void shouldHandleEmptyAndSingleSongPlaylists() {
         Song song = createSong("Yellow", "Coldplay", "Rock");
 
-        List<Song> shuffledSongs = strategy.shuffle(List.of(song));
-
-        assertThat(shuffledSongs).containsExactly(song);
+        assertThat(strategy.shuffle(List.of())).isEmpty();
+        assertThat(strategy.shuffle(List.of(song))).containsExactly(song);
     }
 
     private Song createSong(String title, String artist, String genre) {

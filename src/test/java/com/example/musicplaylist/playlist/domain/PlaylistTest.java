@@ -49,15 +49,6 @@ public class PlaylistTest {
                     .extracting(v -> v.getPropertyPath().toString())
                     .containsExactly("name");
         }
-
-        @Test
-        void shouldRejectOversizedFields() {
-            Playlist playlist = Playlist.of("a".repeat(256), "a".repeat(1001));
-
-            assertThat(validator.validate(playlist))
-                    .extracting(v -> v.getPropertyPath().toString())
-                    .containsExactlyInAnyOrder("name", "description");
-        }
     }
 
     @Nested

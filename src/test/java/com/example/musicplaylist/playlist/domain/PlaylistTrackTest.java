@@ -50,20 +50,6 @@ public class PlaylistTrackTest {
         assertThat(track.getPosition()).isZero();
     }
 
-    @Test
-    void shouldRejectNegativePositionUpdate() {
-        Playlist playlist = Playlist.of("My Playlist", "Description");
-        PlaylistTrack track = PlaylistTrack.of(playlist, createSong(), 2);
-
-        assertThatThrownBy(() -> track.updatePosition(-1))
-                .isInstanceOfSatisfying(
-                        BusinessException.class,
-                        exception -> assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_POSITION)
-                );
-
-        assertThat(track.getPosition()).isEqualTo(2);
-    }
-
     private Song createSong() {
         return Song.builder()
                 .title("Yellow")

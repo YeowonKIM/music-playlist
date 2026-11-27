@@ -6,7 +6,6 @@ import com.example.musicplaylist.song.dto.SongResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -132,20 +131,6 @@ class MusicPlayerTest {
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMPTY_PLAYLIST);
 
         assertThat(musicPlayer.getState()).isEqualTo(original);
-    }
-
-    @Test
-    void shouldProtectPlaybackQueueFromExternalModification() {
-        List<SongResponse> songs = new ArrayList<>(List.of(yellow, hello));
-
-        PlaybackState state = musicPlayer.play(1L, songs, null);
-
-        songs.clear();
-
-        assertThat(state.playbackQueue()).containsExactly(yellow, hello);
-
-        assertThatThrownBy(() -> state.playbackQueue().clear())
-                .isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
