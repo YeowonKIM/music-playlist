@@ -16,6 +16,7 @@ public enum ErrorCode {
     DUPLICATE_SONG("Song already exists in the playlist"),
     INVALID_POSITION("Invalid track position"),
     INVALID_SHUFFLE_STRATEGY("Invalid shuffle strategy"),
+    INVALID_EXPORT_FORMAT("Invalid export format"),
     INTERNAL_SERVER_ERROR("An unexpected error occurred");
 
     private final String message;
