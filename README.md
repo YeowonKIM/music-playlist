@@ -67,13 +67,6 @@ The following sample data is automatically initialized at application startup, w
 - 30 songs, 15 artists, and 6 genres
 - 5 playlists
 
-To explore the initial dataset:
-
-```bash
-curl http://localhost:8080/api/songs
-curl http://localhost:8080/api/playlists/details
-```
-
 The application uses an H2  database. All data is reset when the application restarts.
 
 <br>
@@ -114,19 +107,19 @@ com.example.musicplaylist
 
 | Category | Base Endpoint | Available Endpoints |
 |---|---|---|
-| Songs | `/api/songs` | `POST /` <br> `GET /` <br> `GET /{songId}` |
-| Playlists | `/api/playlists` | `POST /` <br> `GET /` <br> `GET /details` <br> `GET /{playlistId}` <br> `GET /{playlistId}/details` <br> `PUT /{playlistId}` <br> `DELETE /{playlistId}` <br> `POST /{playlistId}/tracks` <br> `DELETE /{playlistId}/tracks/{songId}` <br> `PATCH /{playlistId}/tracks/{songId}/position` |
-| Shuffle | `/api` | `GET /shuffle/strategies` <br> `GET /playlists/{playlistId}/shuffle?strategy={strategy}` |
-| Recommendation | `/api/playlists/{playlistId}` | `GET /recommendations?limit={limit}` |
-| Export | `/api` | `GET /export/formats` <br> `GET /playlists/{playlistId}/export?format={format}` |
-| Player | `/api/player` | `POST /play` <br> `POST /pause` <br> `POST /resume` <br> `POST /stop` <br> `POST /next` <br> `POST /previous` <br> `GET /state` |
-| Workflow | `/api/workflows` | `POST /create-and-play` |
+| Songs | /api/songs | POST /<br> GET /<br> GET /{songId} |
+| Playlists | /api/playlists | POST /<br> GET /<br> GET /details<br> GET /{playlistId}<br> GET /{playlistId}/details<br> PUT /{playlistId}<br> DELETE /{playlistId}<br> POST /{playlistId}/tracks<br> DELETE /{playlistId}/tracks/{songId}<br> PATCH /{playlistId}/tracks/{songId}/position |
+| Shuffle | /api | GET /shuffle/strategies<br> GET /playlists/{playlistId}/shuffle?strategy={strategy} |
+| Recommendation | /api/playlists/{playlistId} | GET /recommendations?limit={limit} |
+| Export | /api | GET /export/formats<br> GET /playlists/{playlistId}/export?format={format} |
+| Player | /api/player | POST /play<br> POST /pause<br> POST /resume<br> POST /stop<br> POST /next<br> POST /previous<br> GET /state |
+| Workflow | /api/workflows | POST /create-and-play |
 
-**Supported Shuffle Strategies:** `random`, `smart`, `genre-balanced`
+- **Supported Shuffle Strategies:** random, smart, genre-balanced
 
-**Supported Export Formats:** `json`, `m3u`, `csv`
+- **Supported Export Formats:** json, m3u, csv
 
-**Default Recommendation Limit:** `10`
+- **Default Recommendation Limit:** 10
 
 <br>
 
@@ -134,7 +127,7 @@ com.example.musicplaylist
 
 <details>
 <summary><strong>Strategy Pattern & Extensibility</strong></summary>
-
+<br>
 The Strategy Pattern is applied to encapsulate shuffle algorithms, recommendation logic, and export formats behind independent interfaces.
 
 | Interface | Implementations |
@@ -159,7 +152,7 @@ This design follows the **Open/Closed Principle (OCP)** and the **Dependency Inv
 
 <details>
 <summary><strong>Singleton & Thread Safety</strong></summary>
-
+<br>
 `MusicPlayer` is implemented as a Spring-managed Singleton Component, sharing a global playback state within a single Application Context.
 
 To ensure state consistency across concurrent requests, the following techniques are applied:
@@ -176,7 +169,7 @@ Since the current requirements do not require advanced locking mechanisms, `sync
 
 <details>
 <summary><strong>Service Composition & Transaction Management</strong></summary>
-
+<br>
 Playlist creation, the addition of recommended songs, and playback initiation are combined into a single workflow.
 
 Existing services are reused, and `TransactionTemplate` is used to explicitly manage the transaction boundaries of database operations.
@@ -189,7 +182,7 @@ This prevents database failures from resulting in an inconsistent playback state
 
 <details>
 <summary><strong>Domain Modeling & Object Creation</strong></summary>
-
+<br>
 The Static Factory Method, Builder Pattern, and encapsulation are applied to control object creation and state modifications.
 
 - **Static Factory Method:** `Playlist.of()` and `PlaylistTrack.of()` provide explicit object creation methods while restricting direct access to constructors.
@@ -207,6 +200,7 @@ These approaches improve readability, maintainability, and the protection of dom
 
 <details>
 <summary><strong>Shuffle Algorithms</strong></summary>
+<br>
 
 | Algorithm | Approach | Time Complexity |
 |---|---|---|
@@ -222,6 +216,7 @@ All shuffle algorithms preserve the original playlist order and return a newly o
 
 <details>
 <summary><strong>Recommendation Algorithm</strong></summary>
+<br>
 
 The content-based recommendation algorithm calculates a relevance score for each candidate song based on two weighted factors:
 
@@ -258,13 +253,13 @@ The testing approach prioritizes business-critical behavior, algorithm correctne
 | Current Implementation | Future Improvements |
 |---|---|
 | H2 in-memory database | Migration to PostgreSQL or Oracle |
-| `synchronized`-based concurrency control | Consider `ReentrantLock` if advanced locking features are required |
+| synchronized-based concurrency control | Consider `ReentrantLock` if advanced locking features are required |
 | Concurrent playlist modifications | Introduce conflict management through Optimistic Locking |
 | Fixed recommendation weights and genre compatibility scores | Externalize configuration, incorporate user feedback, and analyze listening patterns |
 
 <details>
 <summary><strong>Database Migration</strong></summary>
-
+<br>
 The application currently uses an H2 in-memory database to simplify execution and testing without requiring an external database installation.
 
 Since the persistence layer is built on Spring Data JPA, the application can migrate to PostgreSQL or Oracle while retaining the existing architecture, subject to database-specific configuration and compatibility testing.
@@ -273,7 +268,7 @@ Since the persistence layer is built on Spring Data JPA, the application can mig
 
 <details>
 <summary><strong>Advanced Concurrency Control</strong></summary>
-
+<br>
 The current `MusicPlayer` implementation uses `synchronized` and immutable state objects to ensure state consistency across concurrent requests.
 
 This approach is simple, maintainable, and sufficient for the current requirements. However, `ReentrantLock` could be considered if the following advanced locking capabilities become necessary:
@@ -286,7 +281,7 @@ This approach is simple, maintainable, and sufficient for the current requiremen
 
 <details>
 <summary><strong>Concurrent Playlist Modifications</strong></summary>
-
+<br>
 The current concurrency control mechanism primarily focuses on the shared playback state managed by `MusicPlayer`.
 
 When multiple requests simultaneously add, remove, or reorder tracks within the same playlist, conflicting modifications or lost updates may occur.
@@ -299,7 +294,7 @@ Pessimistic Locking could also be considered depending on the frequency of confl
 
 <details>
 <summary><strong>Recommendation Algorithm Enhancement</strong></summary>
-
+<br>
 The current recommendation algorithm uses Content-based Filtering based on the genre distribution and artist frequency within a playlist.
 
 The recommendation weights (70:30) and genre compatibility scores are arbitrarily defined and do not reflect actual user listening patterns or evolving preferences.
