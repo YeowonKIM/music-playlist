@@ -110,6 +110,7 @@ com.example.musicplaylist
 <br>
 
 ## 6. API Specification
+- **Swagger UI (Local):** [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
 
 | Category | Base Endpoint | Available Endpoints |
 |---|---|---|
@@ -204,7 +205,8 @@ These approaches improve readability, maintainability, and the protection of dom
 
 ## 8. Algorithms
 
-### Shuffle Algorithms
+<details>
+<summary><strong>Shuffle Algorithms</strong></summary>
 
 | Algorithm | Approach | Time Complexity |
 |---|---|---|
@@ -216,15 +218,20 @@ Where `n` is the number of songs and `a` is the number of distinct artists.
 
 All shuffle algorithms preserve the original playlist order and return a newly ordered list of songs without modifying the original playlist.
 
-### Recommendation Algorithm
+</details>
+
+<details>
+<summary><strong>Recommendation Algorithm</strong></summary>
 
 The content-based recommendation algorithm calculates a relevance score for each candidate song based on two weighted factors:
 
 - **Genre Compatibility (70%):** Compatibility between the candidate song's genre and the genre distribution of the playlist.
 - **Artist Affinity (30%):** The relative frequency of the candidate song's artist within the playlist.
 
-
 The highest-ranked songs are returned according to the requested recommendation limit.
+
+</details>
+
 
 <br>
 

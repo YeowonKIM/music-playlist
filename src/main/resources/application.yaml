@@ -21,3 +21,10 @@ spring:
   app:
     sample-data:
       enabled: true
+
+  springdoc:
+    paths-to-match: /api/**
+    swagger-ui:
+      tags-sorter: alpha
+      operations-sorter: alpha
+    default-produces-media-type: application/json
